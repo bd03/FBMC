@@ -11,7 +11,7 @@
 % necessary, error messages should be raised.
 %
 % Last updated: 18-03-2014
-c1 = clock;
+c1 = clock; 
 
 %% General filter parameters
 K = 4; % overlapping factor
