@@ -1,0 +1,8 @@
+# For this project, codes from other sources
+# should not be committed:
+10_FBMC/
+11_OFDM/
+19_Other/
+
+# Autosaved files should also be ignored:
+*.asv
