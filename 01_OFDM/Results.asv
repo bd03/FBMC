@@ -1,0 +1,14 @@
+%% Results
+%
+% Burak Dayi
+%
+%
+
+[error1,rate2] = symerr(m,m_est);
+err=abs(m-m_est);
+dif_qam =[qam_m qam_est];
+error2 = symerr(qam_m,qam_est);
+dif_oqam =[oqam_m oqam_demod];
+error3 = symerr(oqam_m,oqam_demod);
+dif_m = [m m_est];
+[error4,rate] = symerr(bits,bits_est);

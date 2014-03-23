@@ -1,0 +1,21 @@
+%% Transmitter
+%
+% Burak Dayi
+%
+% This script will perform transmitter block.
+%
+%
+% Last updated: 18-03-2014
+
+tx_ifft_output = ifft(qam_m);
+
+%% Parallel to Serial Conversion
+tx_serial = reshape(tx_ifft_output,1,M*num_symbols);
+
+%% Cyclic prefix addition
+tx_output = zeros(1,tx_serial+M*cp_length);
+
+for i=1:num_symbols
+    tx_output(1,1+(i-1)*(M+cp_length):M+(i-1)*(M+cp_length)) = ...
+        tx_serial(1+(i-1)*M:M+(
+end
