@@ -44,11 +44,7 @@ if is_simulation
         end
     end
 else
-    if ~ideal
-        disp(sprintf('\nK=%d, M=%d, num_sym=%d, %d-QAM, SNR=%d dB', K,M,num_symbols,modulation,SNR));
-    else
-        disp(sprintf('\nK=%d, M=%d, num_sym=%d, %d-QAM, SNR=Ideal', K,M,num_symbols,modulation));
-    end
+    
     disp(sprintf('Number of errorneous samples: %d/%d', error1,num_symbols*M))
     disp(sprintf('SER: %f', rate2));
 %     disp(sprintf('Number of errors qam_dif: %d', error2))
