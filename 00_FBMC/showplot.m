@@ -22,7 +22,7 @@ function varargout = showplot(varargin)
 
 % Edit the above text to modify the response to help showplot
 
-% Last Modified by GUIDE v2.5 23-Mar-2014 17:29:52
+% Last Modified by GUIDE v2.5 24-Mar-2014 14:49:04
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -88,7 +88,7 @@ else
     end
 end
 
-new_data_process(hObject,handles,BER,conf);
+new_data_process(hObject,handles,BER,conf,fname);
 
 
 
@@ -302,11 +302,19 @@ function togglebutton24_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of togglebutton24
 update_plot(handles)
 
+% --- Executes on button press in togglebutton25.
+function togglebutton25_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton25 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton25
+update_plot(handles);
+
 function update_plot(handles)
 % toggle1: M=4
 % toggle13-19: M=8,16,32,64,128,256,512
 % toggle20-24: 4-16-64-128-256-QAM
-
 % plot data 
 % line modifiers
 markers= ['+' 'o' '*' 's' '^'];
@@ -317,12 +325,25 @@ combined = ['--g' '-m' '--b' '-r' '--k' '-g' '--m' '-b' '--r' '-k'];
 %colors and styles
 flag_at_least_one = false;
 
+%plot OFDM data if desired
+if get(handles.togglebutton25,'Value')
+    for zx=handles.CONF_OFDM_QAM.mod_sch
+        modifier = strcat('k',markers(mod(find(handles.all_mod==zx)-1,5)+1));
+    %         find(handles.CONF_OFDM_QAM.mod_sch==zx)
+    %         handles.CONF_OFDM_QAM.SNR_val
+        semilogy(handles.CONF_OFDM_QAM.SNR_val,handles.BER_OFDM_QAM(find(handles.CONF_OFDM_QAM.mod_sch==zx),:)...
+            ,modifier,'LineWidth',2,'MarkerSize',8);
+        flag_at_least_one = true;
+        hold on
+        grid on
+    end
+end
+
 for qw=handles.conf(1).M_val
     for zx=handles.conf(1).mod_sch
-        
         if get(handles.handles_M(log2(qw)-1),'Value')==1 && get(handles.handles_mod(find(handles.all_mod==zx)),'Value')==1 && ...
                 strcmp(get(handles.handles_M(log2(qw)-1),'Enable'),'on') && strcmp(get(handles.handles_mod(find(handles.all_mod==zx)),'Enable'),'on') 
-%             disp(sprintf('qw%d zx%d',qw,zx))
+%             disp(sprintf('qw%d zx%d',qw,zx))handles.BER_OFDM_QAM=BER_OFDM_QAM;handles.CONF_OFDM_QAM=CONF_OFDM_QAM;
             modifier = strcat(lines(mod(log2(qw)-1-1,2)+1),colors(mod(log2(qw)-1,5)+1),markers(mod(find(handles.all_mod==zx)-1,5)+1));
             semilogy(handles.conf(1).SNR_val,handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx),:),modifier,...
                 'LineWidth',1.5,'MarkerSize',8);
@@ -346,7 +367,6 @@ function uipushtool2_ClickedCallback(hObject, eventdata, handles)
 % hObject    handle to uipushtool2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 % obtain BER file
 [fname, pname] = uigetfile({'BER*.mat'},'Choose BER file');
 
@@ -362,13 +382,30 @@ if fname
         error('CONF data could not be found.')
     end
     
-    new_data_process(hObject,handles,BER,conf);
+    new_data_process(hObject,handles,BER,conf,fname);
 end
 
-function new_data_process(hObject,handles,BER,conf)
+function new_data_process(hObject,handles,BER,conf,fname)
 handles.BER = BER;
 handles.conf = conf;
 
+%OFDM data retrieval
+try
+    load('BER_archive\BER_OFDM_QAM.mat');
+    try
+        load('BER_archive\CONF_OFDM_QAM.mat');
+    catch
+        error('CONF_OFDM_QAM data could not be found.')
+    end
+    set(handles.togglebutton25,'Enable','on','Value',0);
+    handles.BER_OFDM_QAM=BER_OFDM_QAM;
+    handles.CONF_OFDM_QAM=CONF_OFDM_QAM;
+catch
+    warning('BER_OFDM_QAM could not be loaded. This option will be disabled.')
+    set(handles.togglebutton25,'Enable','off');
+end
+
+set(handles.figure1,'Name',fname)
 % toggle button handles belonging to different M values
 handles.handles_M =[handles.togglebutton1,handles.togglebutton13,...
     handles.togglebutton14,handles.togglebutton15,handles.togglebutton16,...

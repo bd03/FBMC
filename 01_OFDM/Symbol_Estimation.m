@@ -8,7 +8,8 @@ m_est = zeros(M,num_symbols);
 
 % Estimation of the symbols
 for k=1:M
-    m_est(k,:) = qamdemod(rx_output(k,:),modulation,pi/2,'gray');
+    %m_est(k,:) = qamdemod(rx_output(k,:),modulation,pi/2,'gray');
+    m_est(k,:) = pskdemod(rx_output(k,:),modulation,pi/2,'gray');
 end
 
 % Estimation of transmitted bits

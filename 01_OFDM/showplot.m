@@ -22,7 +22,7 @@ function varargout = showplot(varargin)
 
 % Edit the above text to modify the response to help showplot
 
-% Last Modified by GUIDE v2.5 21-Mar-2014 02:12:21
+% Last Modified by GUIDE v2.5 23-Mar-2014 17:29:52
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -54,13 +54,42 @@ function showplot_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for showplot
 handles.output = hObject;
 
-% Update handles structure
-guidata(hObject, handles);
+% obtain BER file
+[fname, pname] = uigetfile({'BER*.mat'},'Choose BER file');
 
-%initial plot
-pushbutton2_Callback(hObject, eventdata, handles)
-pushbutton4_Callback(hObject, eventdata, handles)
-update_plot(handles)
+if fname
+    try
+        load(strcat(pname, fname));
+    catch
+        error('BER data could not be loaded.')
+    end
+    try
+    load(strcat(pname,'CONF',fname(4:length(fname))));
+    catch
+        error('CONF data could not be found.')
+    end
+else
+    warning('A BER file should be selected');
+    [fname, pname] = uigetfile({'BER*.mat'},'Choose BER file');
+    
+    if ~fname
+        error('Could not reach a BER file');
+    else
+        try
+            load(strcat(pname, fname));
+        catch
+            error('BER data could not be loaded.')
+        end
+        try
+            load(strcat(pname,'CONF',fname(4:length(fname))));
+        catch
+            error('CONF data could not be found.')
+        end
+    end
+end
+
+new_data_process(hObject,handles,BER,conf);
+
 
 
 % UIWAIT makes showplot wait for user response (see UIRESUME)
@@ -155,10 +184,10 @@ function pushbutton3_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton3 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles_array=[handles.togglebutton20,handles.togglebutton21, ...
-    handles.togglebutton22, handles.togglebutton23,handles.togglebutton24];
-for i=1:length(handles_array)
-    set(handles_array(i),'Value',0)
+for i=handles.handles_mod
+    if strcmp(get(i,'Enable'),'on')
+        set(i,'Value',0);
+    end
 end
 update_plot(handles);
 
@@ -167,10 +196,10 @@ function pushbutton4_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton4 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles_array=[handles.togglebutton20,handles.togglebutton21, ...
-    handles.togglebutton22, handles.togglebutton23,handles.togglebutton24];
-for i=1:length(handles_array)
-    set(handles_array(i),'Value',1)
+for i=handles.handles_mod
+    if strcmp(get(i,'Enable'),'on')
+        set(i,'Value',1);
+    end
 end
 
 update_plot(handles);
@@ -180,11 +209,10 @@ function pushbutton1_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles_array =[handles.togglebutton1,handles.togglebutton13,...
-    handles.togglebutton14,handles.togglebutton15,handles.togglebutton16,...
-    handles.togglebutton17, handles.togglebutton18,handles.togglebutton19];
-for i=1:length(handles_array)
-    set(handles_array(i),'Value',0)
+for i=handles.handles_M
+    if strcmp(get(i,'Enable'),'on')
+        set(i,'Value',0);
+    end
 end
 update_plot(handles);
 
@@ -195,11 +223,10 @@ function pushbutton2_Callback(hObject, eventdata, handles)
 % hObject    handle to pushbutton2 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-handles_array =[handles.togglebutton1,handles.togglebutton13,...
-    handles.togglebutton14,handles.togglebutton15,handles.togglebutton16,...
-    handles.togglebutton17, handles.togglebutton18,handles.togglebutton19];
-for i=1:length(handles_array)
-    set(handles_array(i),'Value',1)
+for i=handles.handles_M
+    if strcmp(get(i,'Enable'),'on')
+        set(i,'Value',1);
+    end
 end
 update_plot(handles);
 
@@ -279,72 +306,8 @@ function update_plot(handles)
 % toggle1: M=4
 % toggle13-19: M=8,16,32,64,128,256,512
 % toggle20-24: 4-16-64-128-256-QAM
-% toggle button handles belonging to different M values
-handles_M =[handles.togglebutton1,handles.togglebutton13,...
-    handles.togglebutton14,handles.togglebutton15,handles.togglebutton16,...
-    handles.togglebutton17, handles.togglebutton18,handles.togglebutton19];
-
-% toggle button handles belonging to different modulation values
-handles_mod=[handles.togglebutton20,handles.togglebutton21, ...
-    handles.togglebutton22, handles.togglebutton23, handles.togglebutton24];
-
-%SNR array, when integrated, this can get values directly from
-%FBMC_simulation file
-% load('SNR_array.mat');
-% load('qam_sizes.mat');
-% load('M_array.mat');
-% file = ls('BER2014*');
-% load(file(size(file,1),:));
-try
-    load('BER_archive/BER2014-3-22-20-15-Final.mat');
-catch
-    error('BER data could not be found.')
-end
-
-try
-    load('BER_archive/CONF2014-3-22-20-15-Final.mat');
-catch
-    error('CONF data could not be found.')
-end
-
-% process conf
-M_array = conf(1).M_val;
-qam_sizes = conf(1).mod_sch;
-SNR_array = conf(1).SNR_val;
-all_mod =[4 16 64 128 256];
-all_M =[4 8 16 32 64 128 256 512];
-
-%active buttons
-for i=all_M
-    if ~ismember(i, M_array)
-        set(handles_M(log2(i)-1),'Value',0,'Enable','off');
-    end
-end
-
-pp=1;
-for i=all_mod
-    if ~ismember(i, qam_sizes)
-        set(handles_mod(find(all_mod==i)),'Value',0,'Enable','off');
-    end
-end
-
-% retrieve data
-data=zeros(length(M_array)*length(qam_sizes),length(SNR_array));
-for qw=1:length(M_array)
-    for zx=1:length(qam_sizes);
-        data(length(qam_sizes)*(qw-1)+zx,:)=BER(qw,zx,SNR_array+1);
-    end
-end
 
 % plot data 
-% data contains BER for (16) different SNR values and oriented in following 
-% fashion:
-% M=4/4-QAM/SNR=0 M=4/4-QAM/SNR=1 M=4/4-QAM/SNR=2 ..........
-% M=4/16-QAM/SNR=0    ......    ......    ......    ......    ......    
-% ......    ......    ......    ......    ......    ......    ......    
-% ......    ......    ......    ......    ......    ......    ......    1
-% M=512/128-QAM/SNR=0............................M=512/128-QAM/SNR=15
-
 % line modifiers
 markers= ['+' 'o' '*' 's' '^'];
 lines = ['-' ':' '-.' '--'];
@@ -353,13 +316,15 @@ combined = ['--g' '-m' '--b' '-r' '--k' '-g' '--m' '-b' '--r' '-k'];
 
 %colors and styles
 flag_at_least_one = false;
-for qw=M_array
-    for zx=qam_sizes
-        if get(handles_M(log2(qw)-1),'Value')==1 && get(handles_mod(find(all_mod==zx)),'Value')==1 && ...
-                strcmp(get(handles_M(log2(qw)-1),'Enable'),'on') && strcmp(get(handles_mod(find(all_mod==zx)),'Enable'),'on') 
-            %disp(sprintf('qw%d zx%d',qw,zx))
-            modifier = strcat(lines(mod(log2(qw)-1-1,2)+1),colors(mod(log2(qw)-1,5)+1),markers(mod(find(all_mod==zx)-1,5)+1));
-            semilogy(SNR_array,data(length(qam_sizes)*(find(M_array==qw)-1)+find(qam_sizes==zx),:),modifier,...
+
+for qw=handles.conf(1).M_val
+    for zx=handles.conf(1).mod_sch
+        
+        if get(handles.handles_M(log2(qw)-1),'Value')==1 && get(handles.handles_mod(find(handles.all_mod==zx)),'Value')==1 && ...
+                strcmp(get(handles.handles_M(log2(qw)-1),'Enable'),'on') && strcmp(get(handles.handles_mod(find(handles.all_mod==zx)),'Enable'),'on') 
+%             disp(sprintf('qw%d zx%d',qw,zx))
+            modifier = strcat(lines(mod(log2(qw)-1-1,2)+1),colors(mod(log2(qw)-1,5)+1),markers(mod(find(handles.all_mod==zx)-1,5)+1));
+            semilogy(handles.conf(1).SNR_val,handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx),:),modifier,...
                 'LineWidth',1.5,'MarkerSize',8);
             flag_at_least_one = true;
             hold on
@@ -374,3 +339,89 @@ hold off
 if ~flag_at_least_one
     semilogy(1,1);
 end
+
+
+% --------------------------------------------------------------------
+function uipushtool2_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to uipushtool2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% obtain BER file
+[fname, pname] = uigetfile({'BER*.mat'},'Choose BER file');
+
+if fname
+    try
+        load(strcat(pname, fname));
+    catch
+        error('BER data could not be loaded.')
+    end
+    try
+        load(strcat(pname,'CONF',fname(4:length(fname))));
+    catch
+        error('CONF data could not be found.')
+    end
+    
+    new_data_process(hObject,handles,BER,conf);
+end
+
+function new_data_process(hObject,handles,BER,conf)
+handles.BER = BER;
+handles.conf = conf;
+
+% toggle button handles belonging to different M values
+handles.handles_M =[handles.togglebutton1,handles.togglebutton13,...
+    handles.togglebutton14,handles.togglebutton15,handles.togglebutton16,...
+    handles.togglebutton17, handles.togglebutton18,handles.togglebutton19];
+
+% toggle button handles belonging to different modulation values
+handles.handles_mod=[handles.togglebutton20,handles.togglebutton21, ...
+    handles.togglebutton22, handles.togglebutton23, handles.togglebutton24];
+
+handles.all_mod =[4 16 64 128 256];
+handles.all_M =[4 8 16 32 64 128 256 512];
+
+%active buttons
+for i=handles.all_M
+    if ~ismember(i, handles.conf(1).M_val)
+        set(handles.handles_M(log2(i)-1),'Value',0,'Enable','off');
+    else
+        set(handles.handles_M(log2(i)-1),'Value',1,'Enable','on');
+    end
+end
+
+for i=handles.all_mod
+    if ~ismember(i, handles.conf(1).mod_sch)
+        set(handles.handles_mod(find(handles.all_mod==i)),'Value',0,'Enable','off');
+    else
+        set(handles.handles_mod(find(handles.all_mod==i)),'Value',1,'Enable','on');
+    end
+end
+
+% retrieve data
+% data contains BER for (16) different SNR values and oriented in following 
+% fashion:
+% M=4/4-QAM/SNR=0 M=4/4-QAM/SNR=1 M=4/4-QAM/SNR=2 ..........
+% M=4/16-QAM/SNR=0    ......    ......    ......    ......    ......    
+% ......    ......    ......    ......    ......    ......    ......    
+% ......    ......    ......    ......    ......    ......    ......    
+% M=512/128-QAM/SNR=0............................M=512/128-QAM/SNR=15
+handles.data=zeros(length(handles.conf(1).M_val)*length(handles.conf(1).mod_sch),length(handles.conf(1).SNR_val));
+
+for qw=1:length(handles.conf(1).M_val)
+    for zx=1:length(handles.conf(1).mod_sch)
+        handles.data(length(handles.conf(1).mod_sch)*(qw-1)+zx,:)=...
+            handles.BER(log2(handles.conf(1).M_val(qw))-1,...
+            find(handles.all_mod==handles.conf(1).mod_sch(zx)),...
+            handles.conf(1).SNR_val+1);
+    end
+end
+
+% Update handles structure
+guidata(hObject, handles);
+
+
+%initial plot
+pushbutton2_Callback(hObject, 0, handles)
+pushbutton4_Callback(hObject, 0, handles)
+update_plot(handles)

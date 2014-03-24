@@ -1,5 +1,5 @@
 % test2.m
-% implementation of system on p.13 of the journal
+%% implementation of system on p.13 of the journal
 
 close all
 clear all

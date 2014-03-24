@@ -1,4 +1,5 @@
-% test3.m
+%% test3.m
+%% qammod test
 close all
 clear all
 clc
