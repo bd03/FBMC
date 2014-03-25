@@ -14,7 +14,7 @@ c1 = clock;
 
 %% General parameters
 M = 128; % number of subcarriers
-num_symbols = 1000; % number of symbols
+num_symbols = 5000; % number of symbols
 modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
 num_samples = M; %number of samples in a vector
 bits_per_sample = log2(modulation); %num of bits carried by one sample

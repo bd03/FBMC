@@ -22,7 +22,7 @@ function varargout = showplot(varargin)
 
 % Edit the above text to modify the response to help showplot
 
-% Last Modified by GUIDE v2.5 24-Mar-2014 14:49:04
+% Last Modified by GUIDE v2.5 25-Mar-2014 11:49:28
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -311,6 +311,16 @@ function togglebutton25_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of togglebutton25
 update_plot(handles);
 
+% --- Executes on button press in togglebutton26.
+function togglebutton26_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton26 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton26
+update_plot(handles);
+
+
 function update_plot(handles)
 % toggle1: M=4
 % toggle13-19: M=8,16,32,64,128,256,512
@@ -326,13 +336,28 @@ combined = ['--g' '-m' '--b' '-r' '--k' '-g' '--m' '-b' '--r' '-k'];
 flag_at_least_one = false;
 
 %plot OFDM data if desired
+%QAM data
 if get(handles.togglebutton25,'Value')
     for zx=handles.CONF_OFDM_QAM.mod_sch
-        modifier = strcat('k',markers(mod(find(handles.all_mod==zx)-1,5)+1));
+        modifier = strcat('--k',markers(mod(find(handles.all_mod==zx)-1,5)+1));
     %         find(handles.CONF_OFDM_QAM.mod_sch==zx)
     %         handles.CONF_OFDM_QAM.SNR_val
         semilogy(handles.CONF_OFDM_QAM.SNR_val,handles.BER_OFDM_QAM(find(handles.CONF_OFDM_QAM.mod_sch==zx),:)...
             ,modifier,'LineWidth',2,'MarkerSize',8);
+        flag_at_least_one = true;
+        hold on
+        grid on
+    end
+end
+
+%PSK data
+if get(handles.togglebutton26,'Value')
+    for zx=handles.CONF_OFDM_PSK.mod_sch
+       % modifier = strcat('--k',markers(mod(find(handles.all_mod==zx)-1,5)+1));
+    %         find(handles.CONF_OFDM_QAM.mod_sch==zx)
+    %         handles.CONF_OFDM_QAM.SNR_val
+        semilogy(handles.CONF_OFDM_PSK.SNR_val,handles.BER_OFDM_PSK(find(handles.CONF_OFDM_PSK.mod_sch==zx),:)...
+            ,'-.p','LineWidth',2,'MarkerSize',8);
         flag_at_least_one = true;
         hold on
         grid on
@@ -400,8 +425,26 @@ try
     handles.CONF_OFDM_QAM=CONF_OFDM_QAM;
 catch
     warning('BER_OFDM_QAM could not be loaded. This option will be disabled.')
-    set(handles.togglebutton25,'Enable','off');
+    set(handles.togglebutton25,'Enable','off','Value',0);
 end
+
+try
+    load('BER_archive\BER_OFDM_PSK.mat');
+    try
+        load('BER_archive\CONF_OFDM_PSK.mat');
+    catch
+        error('CONF_OFDM_PSK data could not be found.')
+    end
+    set(handles.togglebutton25,'Enable','on','Value',0);
+    handles.BER_OFDM_PSK=BER_OFDM_PSK;
+    handles.CONF_OFDM_PSK=CONF_OFDM_PSK;
+catch
+    warning('BER_OFDM_PSK could not be loaded. This option will be disabled.')
+    set(handles.togglebutton26,'Enable','off','Value',0);
+end
+
+
+
 
 set(handles.figure1,'Name',fname)
 % toggle button handles belonging to different M values
@@ -455,8 +498,9 @@ end
 % Update handles structure
 guidata(hObject, handles);
 
-
 %initial plot
 pushbutton2_Callback(hObject, 0, handles)
 pushbutton4_Callback(hObject, 0, handles)
 update_plot(handles)
+
+
