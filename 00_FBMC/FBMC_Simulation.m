@@ -82,9 +82,13 @@ delete('BER*.mat');
 save(sprintf('BER%d-%d-%d-%d-%d-Final.mat', c2(1:5)),'BER');
 try
     a=ls('CONF2*'); 
-    movefile(a(1,:),sprintf('CONF%d-%d-%d-%d-%d-Final.mat',c2(1:5)));
+    load(a);
+    conf.ended=c2;
+    conf.time_elapsed = etime(conf.ended,conf.started);
+    movefile(a(1,:),sprintf('CONF%d-%d-%d-%d-%d-Final.mat',conf.ended(1:5)));
+    save(sprintf('CONF%d-%d-%d-%d-%d-Final.mat',conf.ended(1:5)),'conf');
 catch err
 end
 
-disp(sprintf('Simulation is completed in %f seconds', etime(c2,c1)));
+disp(sprintf('Simulation is completed in %f seconds', conf.time_elapsed));
 %showplot;

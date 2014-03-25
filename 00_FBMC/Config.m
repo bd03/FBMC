@@ -42,7 +42,7 @@ if is_simulation
     
     %---- Simulation settings ----%
     num_symbols = 7; % number of symbols sent back to back in one transmission    
-    num_trials = 1; % number of trials desired
+    num_trials = 7; % number of trials desired
     ideal=0; %set 0 for SNR values to affect channel, set 1 for ideal channel
     
     M_arr=2.^(4:6); % array of M's that will be used in the simulation
@@ -74,8 +74,20 @@ if is_simulation
     % BER matrix that will store BER values
     BER=zeros(length(M_array),length(qam_sizes),length(SNR_array));
     % CONF file that will store configuration of the simulation parameters
-    conf=struct('M_val',M_arr,'mod_sch', q_arr,'SNR_val',s_arr);
     c1 = clock; % time stamp
+    conf=struct('M_val',M_arr,...
+        'mod_sch', q_arr,...
+        'SNR_val',s_arr,...
+        'num_symbols',num_symbols,...
+        'num_trials',num_trials,...
+        'K',K,...
+        'started',c1,...
+        'ended',[],...
+        'mode','FBMC',...
+        'time_elapsed',0,...
+        'ideal',ideal,...
+        'resp',[],...
+        'explanation','Blank');
     save(sprintf('CONF%d-%d-%d-%d-%d.mat', c1(1:5)),'conf');
     
 else
@@ -139,8 +151,12 @@ else
     end
 end
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
+disp(sprintf('Warning: All the BER/CONF files in current directory will be deleted!\n'))
 pause;
-
+delete('BER*.mat');
+delete('CONF*.mat');
+conf.started = clock;
+save(sprintf('CONF%d-%d-%d-%d-%d.mat', conf.started(1:5)),'conf');
 
 
 
