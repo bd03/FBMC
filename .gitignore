@@ -3,6 +3,7 @@
 10_FBMC/
 11_OFDM/
 19_Other/
+21_FileExchange/
 
 # Autosaved files should also be ignored:
 *.asv
