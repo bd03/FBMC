@@ -1,8 +1,8 @@
-% test2.m
-%% implementation of system on p.13 of the journal
+% test5.m
+%% implementation of system on p.13 of the journal with deconv
 
 close all
-clear all
+%clear all
 %clc
 
 load('ppa.mat')
@@ -37,23 +37,28 @@ end
 %bout(2,:)=-1*bout(2,:);
 
 %sampled=bout;
-sampled=bout(:,4:4+size(s,2)-1)./.6863;
+%sampled=bout(:,4:4+size(s,2)-1)./.6863;
 
  
-fout = fft(sampled);
+fout = fft(bout);
+fcoef = fft(coef);
+
+
 
 figure(1);
 for i=1:4
-    subplot(2,2,i);
-    plot(real(fout(i,:)));
-    title(sprintf('sc=%d',i));
-    %axis([1 size(s,2) -2 2]);
+    inp=fout(i,2:length(fout(i,:)));
+    s_est(i,:)=deconv(inp,fcoef(i,2:6));
+%     subplot(2,2,i);
+%     plot(real(fout(i,:)));
+%     title(sprintf('sc=%d',i));
+%     %axis([1 size(s,2) -2 2]);
 end
 
-s_est=real(fout);
-
-dif_s =[s, s_est];
-serr = abs(s-round(s_est));
+% s_est=real(fout);
+% 
+% dif_s =[s, s_est];
+% serr = abs(s-round(s_est));
 
 
 

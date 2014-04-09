@@ -16,7 +16,7 @@
 %% 1- is_simulation setting: 
 % set it 1 if you want to run a simulation with selected parameters. 
 % set it 0 if you want to run only one try with selected parameters.
-is_simulation = true;
+is_simulation = false;
 
 %% 2- Set parameters for desired mode.
 if is_simulation
@@ -37,15 +37,15 @@ if is_simulation
     %---------------------------------
     % These are the values that are taken into account during the project.
     qam_sizes = [4 16 64 128 256]; % supported QAM modulation sizes
-    SNR_array = 0:1:15; % supported SNR value(s) in dB.
-    M_array = 2.^(2:9);
+    SNR_array = -10:1:30; % supported SNR value(s) in dB.
+    M_array = 2.^(2:10);
     
     %---- Simulation settings ----%
-    num_symbols = 7; % number of symbols sent back to back in one transmission    
-    num_trials = 7; % number of trials desired
+    num_symbols = 2000; % number of symbols sent back to back in one transmission    
+    num_trials = 200; % number of trials desired
     ideal=0; %set 0 for SNR values to affect channel, set 1 for ideal channel
     
-    M_arr=2.^(4:6); % array of M's that will be used in the simulation
+    M_arr=2.^(5:7); % array of M's that will be used in the simulation
     q_arr=[4 16 64]; % array of QAM modes that will be used in sim.
     s_arr=SNR_array; % array of SNR values that will be used in the simulation
         
@@ -72,7 +72,8 @@ if is_simulation
     
     %---- Initialization of data containers ----%
     % BER matrix that will store BER values
-    BER=zeros(length(M_array),length(qam_sizes),length(SNR_array));
+    %BER=zeros(length(M_array),length(qam_sizes),length(SNR_array));
+    %[change]
     % CONF file that will store configuration of the simulation parameters
     c1 = clock; % time stamp
     conf=struct('M_val',M_arr,...
@@ -93,10 +94,10 @@ if is_simulation
 else
     %% 2.b Main mode parameters
     %---- General filterbank parameters ----%
-    K = 4; % overlapping factor
-    M = 4; % number of subcarriers
+    K = 3; % overlapping factor
+    M = 8; % number of subcarriers
     % num_frames = 0; % number of frames
-    num_symbols = 7; % number of symbols sent back to back in one transmission
+    num_symbols = 5000; % number of symbols sent back to back in one transmission
     num_samples = M; %number of samples in a vector
     modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
     bits_per_sample = log2(modulation); %num of bits carried by one sample
@@ -113,7 +114,7 @@ else
     P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
     
     %---- Channel settings ----%
-    ideal=0; %set 0 for SNR values to affect channel, set 1 for ideal channel
+    ideal=1; %set 0 for SNR values to affect channel, set 1 for ideal channel
     SNR = -10; % SNR of the channel. ideal=0 to see the effects on channel
     
     %---- Parameter check ---%
@@ -151,12 +152,16 @@ else
     end
 end
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
-disp(sprintf('Warning: All the BER/CONF files in current directory will be deleted!\n'))
-pause;
-delete('BER*.mat');
-delete('CONF*.mat');
-conf.started = clock;
-save(sprintf('CONF%d-%d-%d-%d-%d.mat', conf.started(1:5)),'conf');
+if is_simulation
+    disp(sprintf('Warning: All the BER/CONF files in current directory will be deleted!\n'))
+    pause;
+%     delete('BER*.mat');
+%     delete('CONF*.mat'); [change]
+    conf.started = clock;
+    save(sprintf('CONF%d-%d-%d-%d-%d.mat', conf.started(1:5)),'conf');
+else
+    pause;
+end
 
 
 

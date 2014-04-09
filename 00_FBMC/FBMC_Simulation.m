@@ -21,11 +21,11 @@
 % Subchannel processing
 % Calculations and statistics
 %
-%
+%!!!!!!!!!!!!!!!!!!clear all configdeki deðiþiklikler
 % Last updated: 19-03-2014 
 
 close all
-clear all
+% clear all
 clc
 fprintf('--------------\n-----FBMC-----\n--simulation--\n--------------\n\n');
 c1=clock;

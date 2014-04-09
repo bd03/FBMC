@@ -30,8 +30,6 @@ fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 
 %% Transmission 
 Config;
-%SNR=10;
-%is_simulation = false;
 disp('+Configuration is obtained.');
 Prototype_filter;
 disp('+Prototype filter is designed.');
