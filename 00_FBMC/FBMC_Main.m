@@ -50,7 +50,7 @@ disp('+Receiver Block is processed.');
 Subchannel_processing;
 disp('+Subchannel processing is done.');
 OQAM_Postprocessing;
-disp('+OQAM Preprocessing is done.');
+disp('+OQAM Postprocessing is done.');
 Symbol_Estimation;
 disp('+Symbol Estimation is done.');
 Results;

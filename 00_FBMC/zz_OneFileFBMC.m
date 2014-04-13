@@ -16,7 +16,7 @@ fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 K = 4; % overlapping factor
 M = 512; % number of subcarriers
 % num_frames = 0; % number of data frames in each FBMC block
-num_symbols = 40; % number of symbols sent back to back in one transmission
+num_symbols = 50; % number of symbols sent back to back in one transmission
 num_samples = M; %number of samples in a vector
 modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
 bits_per_sample = log2(modulation); %num of bits carried by one sample
@@ -38,7 +38,7 @@ preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
 %---- Channel settings ----%
 % noise settings
 noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
-SNR = 0; % SNR of the channel. ideal=0 to see the effects on channel
+SNR = 10; % SNR of the channel. ideal=0 to see the effects on channel
 
 %rayleigh channel settings
 fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
@@ -46,7 +46,7 @@ bw = 5e+6; % Transmission Bandwidth
 channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
 profile ='EPA'; %Channel profile
 [delay_a pow_a] = LTE_channels (profile,bw);
-ch_resp = rayleighchan(1/bw,10,delay_a,pow_a); %channel modelled
+ch_resp = rayleighchan(1/bw,0,delay_a,pow_a); %channel modelled
 %ch_h.storeHistory = 1;
 %ch_h.storePathGains =1;
 
@@ -323,17 +323,37 @@ end
 
 % three tap equalizer
 % coef computation
-eq_coefs = zeros(M,3);
-for i=1:M
-    eq_center = 1/ch_resp_est(i);
-    eq_lower = 1/ch_resp_est(mod(i-1-1,M)+1);
-    eq_upper = 1/ch_resp_est(mod(i,M)+1);
-    eq_coefs(i,:) = [eq_lower eq_center eq_upper];
-    
-    equalizer_output(i,:)=conv(eq_coefs,scp_data);
-end
+% eq_coefs = zeros(M,3);
+% ro = .5;
+% for i=1:M
+%     eq_center = 1/ch_resp_est(i);
+%     eq_lower = 1/ch_resp_est(mod(i-1-1,M)+1);
+%     eq_upper = 1/ch_resp_est(mod(i,M)+1);
+%     eqs = [eq_lower eq_center eq_upper];
+% %     % geometric interpolation proposed by Aurelio & Bellanger
+%     eq_coefs(i,1)= eqs(1)*(eqs(2)/eqs(1))^ro;
+%     eq_coefs(i,2)= eqs(2);
+%     eq_coefs(i,3)= eqs(2)*(eqs(3)/eqs(2))^ro;
+% 
+%     prim = upsample(conv(eq_coefs(i,:),scp_data(i,1:2:end-1)),2);
+%     seco = circshift((upsample(conv(eq_coefs(i,:),scp_data(i,2:2:end)),2)).',1).';
+%     psps = prim+seco;    
+%     
+% %     re re re ... im im im ...
+% %     sp_output(i,:) = psps(2:2*num_symbols+1);
+%
+% %     re im re im ...
+% %     equalizer_output(i,:)=conv(eq_coefs(i,:),scp_data(i,:));
+% %     sp_output(i,:) = equalizer_output(i,2:2*num_symbols+1);
+% 
+%     %sample again
+%     
+% end
 
-%sp_output = scp_data;
+% equalizer_output=conv(eq_coefs,scp_data);
+
+
+% sp_output = scp_data;
 disp('+Subchannel processing is done.');
 %% OQAM_Postprocessing
 %

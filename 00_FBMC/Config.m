@@ -94,12 +94,12 @@ if is_simulation
 else
     %% 2.b Main mode parameters
     %---- General filterbank parameters ----%
-    K = 3; % overlapping factor
-    M = 8; % number of subcarriers
+    K = 4; % overlapping factor
+    M = 512; % number of subcarriers
     % num_frames = 0; % number of frames
-    num_symbols = 5000; % number of symbols sent back to back in one transmission
+    num_symbols = 1000; % number of symbols sent back to back in one transmission
     num_samples = M; %number of samples in a vector
-    modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
+    modulation = 64; %4-, 16-, 64-, 128-, 256-QAM
     bits_per_sample = log2(modulation); %num of bits carried by one sample
     num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
     lp = K*M-1; % filter length

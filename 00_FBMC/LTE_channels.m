@@ -1,5 +1,5 @@
                    
-function [ci_imp_out] = LTE_channels (type,bandwidth)
+function [delay_a pow_a] = LTE_channels (type,bandwidth)
 %LTE channels
 
 
