@@ -1,55 +1,59 @@
-%% test
+%% zz_OneFileFBMC.m
 %
 % Burak Dayi
 %
-% This script will implement synthesis and analysis filterbanks
-%
-% Notes:
-% Configuration will allow only subcarrier sizes of a power of two so as to
-% be able to use FFT in the implementation
-%
-% The prototype filter used here is the PHYDYAS filter described in
-% Deliverable 5.1: Prototype filter and structure optimization
-%
-% The implementation of the blocks follows what is described in Deliverable
-% 5.1 transmultiplexer architecture.
-%
-% Channel implementation
-% Subchannel processing
-% Calculations and statistics will be handled later.
-%
-% Last updated: 17-03-2014
 
 close all
 clear all
 clc
-fprintf('--------------\n-----TEST-----\n--------------\n\n');
+fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 
-%% Configuration
-%
-% The user may set number of subcarriers, 
-% overlapping factor, length of filter, prototype filter design parameters,
-% modulation type, (number of frames, number of symbols), SNR value (and
-% number of trials).
-%
-% The user input should be controlled and if
-% necessary, error messages should be raised.
+%% Transmission 
+%% Config
 
-% -------------------------
-% General filter parameters
-% -------------------------
+% 2.b Main mode parameters
+%---- General filterbank parameters ----%
 K = 4; % overlapping factor
-M = 64; % number of subcarriers
-% num_frames = 0; % number of frames
-num_symbols = 10000; % number of symbols
+M = 512; % number of subcarriers
+% num_frames = 0; % number of data frames in each FBMC block
+num_symbols = 40; % number of symbols sent back to back in one transmission
 num_samples = M; %number of samples in a vector
-modulation = 64; % 4-, 16- or 64-QAM
+modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
+bits_per_sample = log2(modulation); %num of bits carried by one sample
+num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
 lp = K*M-1; % filter length
 delay = K*M+1-lp; %delay requirement
 
+%---- Prototype filter frequency coefficients----%
+%---------------------------------
+% This part should not be altered!
+%---------------------------------
+% K will select the row, the last column is background noise power in dB 
+% (that might be come in handy in future) for reference
+P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
 
+%---- Preamble creation ----%
+preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+
+%---- Channel settings ----%
+% noise settings
+noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
+SNR = 0; % SNR of the channel. ideal=0 to see the effects on channel
+
+%rayleigh channel settings
+fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
+bw = 5e+6; % Transmission Bandwidth
+channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
+profile ='EPA'; %Channel profile
+[delay_a pow_a] = LTE_channels (profile,bw);
+ch_resp = rayleighchan(1/bw,10,delay_a,pow_a); %channel modelled
+%ch_h.storeHistory = 1;
+%ch_h.storePathGains =1;
+
+
+%---- Parameter check ---%
 if K>4 || K<2
-    K
+K
     error('Range of integer K is [2 4]');
 end
 
@@ -63,107 +67,36 @@ if ~(lp == K*M || lp == K*M-1 || lp == K*M+1)
     error('Only filter sizes of KM, KM+1, KM-1 are suported.');
 end
 
-if ~(ismember(modulation,[4 16 64 128 256]))
+if ~~mod(log2(modulation),1)
     modulation
-    %error('Only 4-QAM scheme is supported. Please set modulation = 4');
-    error('Only 4-,16-,64-QAM schemes are supported. Define the number of constellation points (4,16,64) with modulation variable.')
+    error('Only modulation=2^m-QAM schemes are supported.')
 end
 
-% --------------------------------
-% Channel & simulation parameters
-% --------------------------------
-SNR = 1; %SNR value(s) in dB.
-num_trials = 1; % number of trials desired
 
-if num_trials<1
-    num_trials
-    error('Number of trials should be a positive integer.');
+% 3- Print the configuration and ask for confirmation from user
+disp('Configuration:')
+if noisy
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d, SNR=%d dB', K,M,num_symbols,modulation,num_bits,SNR));
+else
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d, SNR=Ideal', K,M,num_symbols,modulation,num_bits));
 end
-
-% ---------------------------------------
-% Prototype filter frequency coefficients
-% ---------------------------------------
-
-% !This part should not be altered!
-
-% K will select the row, the last column is background noise power in dB 
-%(that might be come in handy in future) for reference
-P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
+disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
+%pause;
 
 disp('+Configuration is obtained.');
-
-%% Prototype_filter
-%
-% The following will compute the prototype filter coefficients and then plot 
-% the prototype filter in frequency and time domain.
-%
-% Dependencies: lp, K, M, delay, P
-% Output: h - prototype filter coefficients in time domain
-
-disp('Prototype filter design')
-
-h = zeros(1,lp); %coefficient array created with filter length
-for m=1:lp
-    h(m) = P(K,1);
-    for k = 1:(K-1)
-        h(m) = h(m) + 2*(((-1)^k)*P(K,k+1)*cos((2*pi*k*m)/(K*M)));
-    end
-end
-
-%normalization of coefficients -> Do we really need this??
-denom = P(K,1)+2*sum(P(K,2:4));
-h=h/denom; %normalization
-
-%delay implementation as on p.19 of deliverable 5.1
-if delay>1
-    h = [0 h 0];
-    delay = delay - 1;
-end
-
-figure(11);
-subplot(311);
-plot(h);
-title(sprintf('Time response of PHYDYAS Filter with K=%d M=%d lp=%d', K,M,lp));
-%figure(12);
-grid on;
-subplot(312);
-plot(abs(fft(h)));
-title(sprintf('Freq response of PHYDYAS Filter with K=%d M=%d lp=%d', K,M,lp));
-ylabel('Magnitude');
-grid on;
-subplot(313);
-semilogy(abs(fft(h)));
-title(sprintf('Freq magnitude response of PHYDYAS Filter with K=%d M=%d lp=%d', K,M,lp));
-% ylabel('Log Magnitude');
-grid on;
-close all
-
+Prototype_filter;
 disp('+Prototype filter is designed.');
-
 %% Symbol_Creation
-%
-% This will create FBMC symbols with the modulation scheme defined
-% in configuration file.
-%
-% Dependencies: modulation, num_subsymbol
-% Output: qam_m - QAM modulated message
 
-disp('Symbol Creation')
+% bit sequence creation
+bits = randi(2,1,num_bits)-1;
 
-m = (randi(modulation,num_symbols,num_samples)-1).'; %random samples generated
-qam_m = qammod(m, modulation); %qam modulation provided by MATLAB is used
+m = reshape(bi2de(reshape(bits,bits_per_sample,M*num_symbols).','left-msb'),M,num_symbols);
+%m = (randi(modulation,num_symbols,num_samples)-1).'; %random samples generated
+qam_m = qammod(m, modulation, pi/2,'gray'); %built-in MATLAB qam modulation 
 
 disp('+Symbols are created.');
-
 %% OQAM_Preprocessing
-%
-% This will perform OQAM preprocessing as it was described in
-% PHYDYAS Deliverable 5.1
-%
-% Dependencies: qam_m - QAM modulated message 
-% Output: oqam_m - OQAM modulated message
-
-disp('OQAM preprocessing')
 
 jn = (j.^((1:2*num_symbols)-1)).'; % j to the power of n
 %for odd subchannels flipped version of this will be used.
@@ -182,16 +115,20 @@ for k=1:M
     oqam_m(k,:) = (real_parts+imag_parts).*theta; 
 end
 
+% preamble insertion
+oqam_m = [preamble oqam_m];
+% 
+% %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
+num_symbols = num_symbols+1;
+% %soru: is preamble oqam modulated or to be modulated???????????????
+% %ans: the preamble takes 3 subsymbol duration with given setup. that
+% %indicates that the preamble will be appended to the oqam modulated data
+% %diger cvp: D3.1'de oyle demiyor ama
+
+
 disp('+OQAM Preprocessing is done.');
-
 %% Transmitter
-%
-% This will perform transmitter block (synthesis filter bank).
-%
-% Dependencies: oqam_m - OQAM modulated message
-% Output: y - composite signal output
 
-disp('Transmitter Block')
 y = zeros(1,K*M+(2*num_symbols-1)*M/2); %composite signal is in series. (k>=1)
 
 % beta multiplier will be an exponential value multiplied by (-1)^kn where
@@ -268,42 +205,26 @@ for r=0:K+num_symbols-1-1
     y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output(:,r+K+num_symbols).';
 end
 
-
 % y will be sent thru the channel
-
 disp('+Transmitter Block is processed.');
-%transmitterda sorun olmamasi lazim
 
 %% Channel
-%
-% This will perform channel impairments on the signal transmitted
-% from the synthesis filter bank block.
-%
-% Dependencies: y - composite signal output
-% Output: y_ch - composite signal gone through channel response
 
-disp('Channel')
+if fading
+    y_filtered = filter(ch_resp,y);
+else
+    y_filtered = y;%filter(1,1,y);
+end
 
-% channel impulse response
-resp = [1]; % no impairments at the moment
-
-%%%%%%%%%y_ch = conv(y,resp);
-y_ch = y;
-
+if ~noisy
+    y_ch = y_filtered;
+else
+    y_ch = awgn(y_filtered,SNR,'measured'); %SNR in dB ~ 10log(Ps/Pn)
+end
 disp('+Channel effects are applied.');
 
+%% Reception
 %% Receiver
-%
-% This will perform receiver block (analysis filter bank).
-%
-% Dependencies: y_ch - composite signal gone through channel response
-% Output: rx_output - receiver block output signal
-
-disp('Receiver Block')
-
-% The downsamplers following delay chain will form a Mx(K+1) matrix with
-% channel output. Therefore, the delay chain and downsampler are jointly
-% implemented as a vector reshape function.
 
 % the matrix that reshaped input samples would be stored in
 receiver_input = zeros(M,2*(K+num_symbols-1)); 
@@ -312,8 +233,8 @@ receiver_input = zeros(M,2*(K+num_symbols-1));
 for r=0:K+num_symbols-1-1
 %     y(1,1+r*M:M+r*M) = y(1,1+r*M:M+r*M)+ tx_poly_output(:,r+1).';
 %     y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output(:,r+K+1).';
-    receiver_input(:,r+1) = y(1,1+r*M:M+r*M);
-    receiver_input(:,r+K+num_symbols) = y(1,1+M/2+r*M:M+M/2+r*M);    
+    receiver_input(:,r+1) = y_ch(1,1+r*M:M+r*M);
+    receiver_input(:,r+K+num_symbols) = y_ch(1,1+M/2+r*M:M+M/2+r*M);    
 end
 
 rx_poly_output = zeros(M,2*(K+num_symbols-1+K-1)); %output of polyphase filters will be stored in this
@@ -381,29 +302,41 @@ for k=1:M
 end
 
 % rx_output will be sent to subchannel processing block
-
 disp('+Receiver Block is processed.');
 
 %% Subchannel_processing
-%
-% This script will perform subchannel processing steps.
-%
-% Dependencies: rx_output - receiver block output signal
-% Output: sp_output - processed signal output
 
-disp('Subchannel Processing')
+% remove preamble
+scp_preamble = rx_output(:,1:2);
+scp_data = rx_output(:,3:end);
 
-sp_output = rx_output;
+% %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
+num_symbols = num_symbols-1;
+% 
+% %estimation of channel
+ch_resp_est = scp_preamble(:,1)./(preamble(:,1)*sumfactor);
 
+% one tap equalizer
+for i=1:2*num_symbols
+    sp_output(:,i) = scp_data(:,i)./ch_resp_est;
+end
+
+% three tap equalizer
+% coef computation
+eq_coefs = zeros(M,3);
+for i=1:M
+    eq_center = 1/ch_resp_est(i);
+    eq_lower = 1/ch_resp_est(mod(i-1-1,M)+1);
+    eq_upper = 1/ch_resp_est(mod(i,M)+1);
+    eq_coefs(i,:) = [eq_lower eq_center eq_upper];
+    
+    equalizer_output(i,:)=conv(eq_coefs,scp_data);
+end
+
+%sp_output = scp_data;
 disp('+Subchannel processing is done.');
-
 %% OQAM_Postprocessing
 %
-% This script will perform OQAM postprocessing as it was described in
-% PHYDYAS Deliverable 5.1
-%
-% Dependencies: sp_output - processed signal output 
-% Output: oqam_demod - estimated message
 
 oqam_demod = zeros(M,2*num_symbols); %the matrix that will store demodulated signal
 oqam_input = zeros(M,2*num_symbols); %this will hold after taking real part
@@ -424,31 +357,35 @@ for k=1:M
 end
 
 disp('+OQAM Postprocessing is done.');
-
-%% Symbol Estimation
+%% Symbol_Estimation
 %
-% This will recombine the QAM samples and extract estimated symbol from
-% those samples.
-%
-% Dependencies: oqam_demod - OQAM demodulated signal samples 
-% Output: m_est - message estimation
 
 qam_est = zeros(M,num_symbols);
 m_est = zeros(M,num_symbols);
+
+% Estimation of the symbols
 for k=1:M
     qam_est(k,:)= (1/sumfactor)*(oqam_demod(k,1:2:2*num_symbols-1)+oqam_demod(k,2:2:2*num_symbols));
-    m_est(k,:) = qamdemod(qam_est(k,:),modulation);
+    m_est(k,:) = qamdemod(qam_est(k,:),modulation,pi/2,'gray');
 end
 
+% Estimation of transmitted bits
+%bits_est=de2bi(reshape(m_est,1,num_symbols*M));
+bits_est=reshape(de2bi(reshape(m_est,num_symbols*M,1),'left-msb').',1,num_bits);
 disp('+Symbol Estimation is done.');
 %% Results
-error1 = symerr(m,m_est);
+
+[error1,rate2] = symerr(m,m_est);
 err=abs(m-m_est);
-dif_qam =[qam_m qam_est];
-error2 = symerr(qam_m,qam_est);
-dif_oqam =[oqam_m oqam_demod];
-error3 = symerr(oqam_m,oqam_demod);
-dif_m = [m m_est];
-disp(sprintf('Number of errors m/m_est: %d', error1))
-disp(sprintf('Number of errors qam_dif: %d', error2))
-disp(sprintf('Number of errors oqam_dif: %d', error3))
+% dif_qam =[qam_m qam_est];
+% error2 = symerr(qam_m(:,4:end),qam_est);
+% dif_oqam =[oqam_m oqam_demod];
+% error3 = symerr(oqam_m,oqam_demod);
+% dif_m = [m m_est];
+[error4,rate] = symerr(bits,bits_est);
+
+disp(sprintf('Number of errorneous samples: %d/%d', error1,num_symbols*M))
+disp(sprintf('SER: %f', rate2));
+disp(sprintf('Number of bit errors: %d/%d', error4,num_bits))
+disp(sprintf('BER: %f\n', rate))
+disp('+Calculations and Statistics..');
