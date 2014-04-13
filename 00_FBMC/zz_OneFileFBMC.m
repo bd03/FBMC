@@ -41,14 +41,19 @@ noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
 SNR = 10; % SNR of the channel. ideal=0 to see the effects on channel
 
 %rayleigh channel settings
-fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
+fading = 0; % set 0 for distortionless channel, set 1 for rayleigh channel
 bw = 5e+6; % Transmission Bandwidth
 channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
 profile ='EPA'; %Channel profile
 [delay_a pow_a] = LTE_channels (profile,bw);
-ch_resp = rayleighchan(1/bw,0,delay_a,pow_a); %channel modelled
-%ch_h.storeHistory = 1;
-%ch_h.storePathGains =1;
+ch_resp = rayleighchan(1/bw,50,delay_a,pow_a); %channel modelled
+ch_h.storeHistory = 1;
+ch_h.storePathGains =1;
+
+%---- Equalizer settings ----%
+eq_select = 3; % selection of equalizer type 1: one tap, 
+% 2: three tap w/ geometric interp, 3: three tap w/ linear interp
+% 4: no equalizer
 
 
 %---- Parameter check ---%
@@ -69,7 +74,12 @@ end
 
 if ~~mod(log2(modulation),1)
     modulation
-    error('Only modulation=2^m-QAM schemes are supported.')
+    error('Only modulation=2^m-QAM schemes are supported.');
+end
+
+if eq_select>4 || eq_select<1 || mod(eq_select,1)~=0
+    eq_select
+    error('eq_select should be an integer in range [1 4].');
 end
 
 
@@ -250,17 +260,17 @@ for k=1:M
     % we use lp+1 b/c of the delay implemented in prototype filter design   
     rx_poly_output(k,:) = [conv(receiver_input(k,1:(K+num_symbols-1)),b) ...
         conv(receiver_input(k,(K+num_symbols):2*(K+num_symbols-1)),b)];
-    rx_fft_input(k,:) = [rx_poly_output(k,K:K+num_symbols-1) ...
-        rx_poly_output(k, 2*K+num_symbols-2+K:2*K+num_symbols-2+K+num_symbols-1)];
+%     rx_fft_input(k,:) = [rx_poly_output(k,K:K+num_symbols-1) ...
+%         rx_poly_output(k, 2*K+num_symbols-2+K:2*K+num_symbols-2+K+num_symbols-1)];
     ppb(k,:) = b;
 end
 
 save('ppb.mat','ppb');
 
 % fft performed
-rx_fft_output=fft(rx_fft_input);
+rx_fft_output=fft(rx_poly_output);
 
-rx_output = zeros(M,2*num_symbols);
+rx_output = zeros(M,2*(num_symbols+K-1+K-1));
 
 % we convolve one sample with the entire filter. then at the receiver we
 % convolve it with another filter. After contributions from other
@@ -281,7 +291,7 @@ for k=1:M
     
     beta =[];
     
-    for c = 1:num_symbols
+    for c = 1:(num_symbols+K-1+K-1)
         beta = [beta bb];
     end
    
@@ -291,8 +301,8 @@ for k=1:M
     % subsymbol
     
     
-    rx_output(k,1:2:2*num_symbols-1) =  rx_fft_output(k,1:num_symbols);
-    rx_output(k,2:2:2*num_symbols) =  rx_fft_output(k,num_symbols+1:2*num_symbols);
+    rx_output(k,1:2:end-1) =  rx_fft_output(k,1:(num_symbols+K-1+K-1));
+    rx_output(k,2:2:end) =  rx_fft_output(k,(num_symbols+K-1+K-1)+1:2*(num_symbols+K-1+K-1));
     
     rx_output(k,:) = rx_output(k,:).*beta;
     
@@ -307,8 +317,8 @@ disp('+Receiver Block is processed.');
 %% Subchannel_processing
 
 % remove preamble
-scp_preamble = rx_output(:,1:2);
-scp_data = rx_output(:,3:end);
+scp_preamble = rx_output(:,2*K-1:2*K);
+scp_data = rx_output;
 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
 num_symbols = num_symbols-1;
@@ -316,13 +326,60 @@ num_symbols = num_symbols-1;
 % %estimation of channel
 ch_resp_est = scp_preamble(:,1)./(preamble(:,1)*sumfactor);
 
-% one tap equalizer
-for i=1:2*num_symbols
-    sp_output(:,i) = scp_data(:,i)./ch_resp_est;
+if eq_select == 1
+    % one tap equalizer
+    for i=2*K+1:2*K+2*num_symbols
+        sp_output(:,i-2*K) = scp_data(:,i)./ch_resp_est;
+    end
+elseif eq_select == 2 || eq_select == 3
+    % % three tap equalizer
+    % % coef computation
+    eq_coefs = zeros(M,3);
+    ro = .5;
+    for i=1:M
+        EQi = 1/ch_resp_est(i);
+        EQ_min = 1/ch_resp_est(mod(i-1-1,M)+1);
+        EQ_plu = 1/ch_resp_est(mod(i,M)+1);
+        eqs = [EQ_min EQi EQ_plu];
+        if eq_select == 2
+            %   % geometric interpolation proposed by Aurelio & Bellanger
+            %   % the coefficient computation from same paper
+            %   % it's also approach 2 section 4.1.2 from D3.1
+            EQ1 = EQ_min*(EQi/EQ_min)^ro;
+            EQ2 = EQi*(EQ_plu/EQi)^ro;
+         
+        elseif eq_select == 3
+            %   % approach 1 D3.1 section 4.1.1 linear interpolation
+            EQ1 = (EQ_min+EQi)/2;
+            EQ2 = (EQi+EQ_plu)/2;            
+        end
+        
+        eq_coefs(i,1)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)+j*(EQ2-EQ1))/4;
+        eq_coefs(i,2)= (EQ1+EQ2)/2;
+        eq_coefs(i,3)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)-j*(EQ2-EQ1))/4; 
+    
+%         prim = upsample(conv(eq_coefs(i,:),scp_data(i,1:2:end-1)),2);
+%         seco = circshift((upsample(conv(eq_coefs(i,:),scp_data(i,2:2:end)),2)).',1).';
+%         psps = prim+seco;    
+%         
+    % %     re re ... im im ...
+    %     sp_output(i,:) = psps(2:2*num_symbols+1);
+    
+    % %     re im re im ...
+        equalizer_output(i,:)=conv(eq_coefs(i,:),scp_data(i,:));
+    
+        %sample
+        sp_output(i,:) = equalizer_output(i,2*K+1+1:2*K+2*num_symbols+1);
+    end
+elseif eq_select == 4 %no equalizer
+    for i=2*K+1:2*K+2*num_symbols
+        sp_output(:,i-2*K) = scp_data(:,i);
+    end
 end
 
-% three tap equalizer
-% coef computation
+
+% % three tap equalizer
+% % coef computation
 % eq_coefs = zeros(M,3);
 % ro = .5;
 % for i=1:M
@@ -339,15 +396,14 @@ end
 %     seco = circshift((upsample(conv(eq_coefs(i,:),scp_data(i,2:2:end)),2)).',1).';
 %     psps = prim+seco;    
 %     
-% %     re re re ... im im im ...
+% % %     re re re ... im im im ...
 % %     sp_output(i,:) = psps(2:2*num_symbols+1);
-%
-% %     re im re im ...
-% %     equalizer_output(i,:)=conv(eq_coefs(i,:),scp_data(i,:));
-% %     sp_output(i,:) = equalizer_output(i,2:2*num_symbols+1);
 % 
-%     %sample again
-%     
+% % %     re im re im ...
+%     equalizer_output(i,:)=conv(eq_coefs(i,:),scp_data(i,:));
+% 
+%     %sample
+%     sp_output(i,:) = equalizer_output(i,2*K+1+1:2*K+2*num_symbols+1);
 % end
 
 % equalizer_output=conv(eq_coefs,scp_data);
