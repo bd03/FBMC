@@ -21,11 +21,11 @@
 % Subchannel processing
 % Calculations and statistics
 %
-%!!!!!!!!!!!!!!!!!!clear all configdeki deðiþiklikler
+% !!!!!!!!!!!!! clear all ve configdeki degisiklikler
 % Last updated: 17-03-2014 
 
 close all
-% clear all
+clear all
 clc
 fprintf('--------------\n-----FBMC-----\n--simulation--\n--------------\n\n');
 c1=clock;
@@ -38,13 +38,21 @@ for M=M_arr
     delay = K*M+1-lp; %delay requirement
     num_samples = M; %number of samples in a vector
     
+    
+    %---- Preamble creation ----%
+    preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
+    %preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
+    %preamble = [repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+    %preamble = [repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
+    %preamble =  [repmat([-3 -3 -1 -1 1 1 3 3].',M/8,1) zeros(M,1)];
+    
     Prototype_filter;
     %disp('+Prototype filter is designed.');
     for modulation=q_arr
         bits_per_sample = log2(modulation); %num of bits carried by one sample
         num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
         for SNR=s_arr
-            if ~ideal
+            if noisy
                 disp(sprintf('M=%d, %d-QAM, SNR=%d dB, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,SNR,num_trials,num_symbols,num_bits));
             else
                 disp(sprintf('M=%d, %d-QAM, SNR=Ideal, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,num_trials,num_symbols,num_bits));

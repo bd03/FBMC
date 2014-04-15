@@ -30,6 +30,8 @@ fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 
 %% Transmission 
 Config;
+%SNR=10;
+%is_simulation = false;
 disp('+Configuration is obtained.');
 Prototype_filter;
 disp('+Prototype filter is designed.');
@@ -50,7 +52,7 @@ disp('+Receiver Block is processed.');
 Subchannel_processing;
 disp('+Subchannel processing is done.');
 OQAM_Postprocessing;
-disp('+OQAM Postprocessing is done.');
+disp('+OQAM Preprocessing is done.');
 Symbol_Estimation;
 disp('+Symbol Estimation is done.');
 Results;

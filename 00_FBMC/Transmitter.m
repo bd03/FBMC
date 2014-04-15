@@ -86,5 +86,4 @@ for r=0:K+num_symbols-1-1
     y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output(:,r+K+num_symbols).';
 end
 
-
 % y will be sent thru the channel

@@ -37,17 +37,17 @@ for k=1:M
     % we use lp+1 b/c of the delay implemented in prototype filter design   
     rx_poly_output(k,:) = [conv(receiver_input(k,1:(K+num_symbols-1)),b) ...
         conv(receiver_input(k,(K+num_symbols):2*(K+num_symbols-1)),b)];
-    rx_fft_input(k,:) = [rx_poly_output(k,K:K+num_symbols-1) ...
-        rx_poly_output(k, 2*K+num_symbols-2+K:2*K+num_symbols-2+K+num_symbols-1)];
+%     rx_fft_input(k,:) = [rx_poly_output(k,K:K+num_symbols-1) ...
+%         rx_poly_output(k, 2*K+num_symbols-2+K:2*K+num_symbols-2+K+num_symbols-1)];
     ppb(k,:) = b;
 end
 
 save('ppb.mat','ppb');
 
 % fft performed
-rx_fft_output=fft(rx_fft_input);
+rx_fft_output=fft(rx_poly_output);
 
-rx_output = zeros(M,2*num_symbols);
+rx_output = zeros(M,2*(num_symbols+K-1+K-1));
 
 % we convolve one sample with the entire filter. then at the receiver we
 % convolve it with another filter. After contributions from other
@@ -68,7 +68,7 @@ for k=1:M
     
     beta =[];
     
-    for c = 1:num_symbols
+    for c = 1:(num_symbols+K-1+K-1)
         beta = [beta bb];
     end
    
@@ -78,8 +78,8 @@ for k=1:M
     % subsymbol
     
     
-    rx_output(k,1:2:2*num_symbols-1) =  rx_fft_output(k,1:num_symbols);
-    rx_output(k,2:2:2*num_symbols) =  rx_fft_output(k,num_symbols+1:2*num_symbols);
+    rx_output(k,1:2:end-1) =  rx_fft_output(k,1:(num_symbols+K-1+K-1));
+    rx_output(k,2:2:end) =  rx_fft_output(k,(num_symbols+K-1+K-1)+1:2*(num_symbols+K-1+K-1));
     
     rx_output(k,:) = rx_output(k,:).*beta;
     

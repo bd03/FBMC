@@ -12,10 +12,11 @@
 
 [error1,rate2] = symerr(m,m_est);
 err=abs(m-m_est);
-dif_qam =[qam_m qam_est];
-error2 = symerr(qam_m,qam_est);
-dif_oqam =[oqam_m oqam_demod];
-error3 = symerr(oqam_m,oqam_demod);
+bit_err = abs(bits-bits_est);
+% dif_qam =[qam_m qam_est];
+% error2 = symerr(qam_m,qam_est);
+% dif_oqam =[oqam_m oqam_demod];
+% error3 = symerr(oqam_m,oqam_demod);
 dif_m = [m m_est];
 [error4,rate] = symerr(bits,bits_est);
 
@@ -48,7 +49,32 @@ else
     disp(sprintf('Number of errorneous samples: %d/%d', error1,num_symbols*M))
     disp(sprintf('SER: %f', rate2));
 %     disp(sprintf('Number of errors qam_dif: %d', error2))
-%     disp(sprintf('Number of errors oqam_dif: %d', error3))
+%     disp(sprintf('Number of errors oqasdasdam_dif: %d', error3))
     disp(sprintf('Number of bit errors: %d/%d', error4,num_bits))
     disp(sprintf('BER: %f\n', rate))
+    
+    for i=1:num_symbols
+        num_errored(i) = length(find(err(:,i)));
+        num_errored_bits_per_symbol(i) = length(find(bit_err(1+(i-1)*num_bits/num_symbols:i*num_bits/num_symbols)));
+    end    
+    
+    for i=1:num_frames
+        num_errored_bits_per_frame(i) = length(find(bit_err(1+(i-1)*num_bits/num_frames:i*num_bits/num_frames)));
+    end
+
+    subplot(311)
+    plot(1:num_symbols,num_errored)
+    xlabel('FBMC symbols');
+    ylabel('Number of errors')
+    title('Number of errors w.r.t symbols')
+    subplot(312)
+    plot(1:num_symbols,num_errored_bits_per_symbol)
+    xlabel('FBMC symbols');
+    ylabel('Number of errors')
+    title('Number of bit errors w.r.t symbols')
+    subplot(313)
+    plot(1:num_frames,num_errored_bits_per_frame)
+    xlabel('FBMC frames');
+    ylabel('Number of errors')
+    title('Number of bit errors w.r.t frames')
 end

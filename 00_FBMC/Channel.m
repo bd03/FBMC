@@ -13,11 +13,15 @@
 % disp('Channel')
 
 % channel impulse response
-resp = [1]; % no impairments at the moment
 
-
-if ideal
-    y_ch = y;
+if fading
+    y_filtered = filter(ch_resp,y);
 else
-    y_ch = awgn(y,SNR,'measured'); %SNR in dB ~ 10log(Ps/Pn)
+    y_filtered = y;%filter(1,1,y);
+end
+
+if ~noisy
+    y_ch = y_filtered;
+else
+    y_ch = awgn(y_filtered,SNR,'measured'); %SNR in dB ~ 10log(Ps/Pn)
 end

@@ -22,11 +22,11 @@ function varargout = showplot(varargin)
 
 % Edit the above text to modify the response to help showplot
 
-% Last Modified by GUIDE v2.5 25-Mar-2014 11:49:28
-
-% Begin initialization code - DO NOT EDIT
+% Last Modified by GUIDE v2.5 15-Apr-2014 16:23:17
 
 % Created: 19-03-2014
+
+% Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
 gui_State = struct('gui_Name',       mfilename, ...
                    'gui_Singleton',  gui_Singleton, ...
@@ -322,6 +322,24 @@ function togglebutton26_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of togglebutton26
 update_plot(handles);
 
+% --- Executes on button press in togglebutton27.
+function togglebutton27_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton27 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton27
+update_plot(handles);
+
+% --- Executes on button press in togglebutton28.
+function togglebutton28_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton28 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton28
+update_plot(handles);
+
 
 function update_plot(handles)
 % toggle1: M=4
@@ -452,14 +470,15 @@ set(handles.figure1,'Name',fname)
 % toggle button handles belonging to different M values
 handles.handles_M =[handles.togglebutton1,handles.togglebutton13,...
     handles.togglebutton14,handles.togglebutton15,handles.togglebutton16,...
-    handles.togglebutton17, handles.togglebutton18,handles.togglebutton19];
+    handles.togglebutton17, handles.togglebutton18,handles.togglebutton19,...
+    handles.togglebutton27, handles.togglebutton28];
 
 % toggle button handles belonging to different modulation values
 handles.handles_mod=[handles.togglebutton20,handles.togglebutton21, ...
     handles.togglebutton22, handles.togglebutton23, handles.togglebutton24];
 
 handles.all_mod =[4 16 64 128 256];
-handles.all_M =[4 8 16 32 64 128 256 512];
+handles.all_M =[4 8 16 32 64 128 256 512 1024 2048];
 
 %active buttons
 for i=handles.all_M
@@ -504,5 +523,3 @@ guidata(hObject, handles);
 pushbutton2_Callback(hObject, 0, handles)
 pushbutton4_Callback(hObject, 0, handles)
 update_plot(handles)
-
-
