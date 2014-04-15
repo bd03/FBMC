@@ -7,7 +7,7 @@
 % Dependencies: rx_output - receiver block output signal
 % Output: sp_output - processed signal output
 %
-% Last updated: 03-03-2014
+% Created: 02-03-2014
 
 % disp('Subchannel Processing')
 

@@ -7,7 +7,7 @@
 % num_symbols, bits_per_sample, num_bits
 % Output: m_est - estimated symbols, bits_est - estimated bits
 %
-% Last updated: 18-03-2014
+% Created: 17-03-2014
 
 % disp('Symbol Estimation')
 

@@ -7,7 +7,7 @@
 % Dependencies: oqam_m - OQAM modulated message, num_symbols, K,M, lp
 % Output: y - composite signal output
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 %disp('Transmitter Block')
 y = zeros(1,K*M+(2*num_symbols-1)*M/2); %composite signal is in series. (k>=1)

@@ -10,7 +10,7 @@
 % In the configuration file user input should be controlled and if
 % necessary, error messages should be raised.
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 % How to configure script?
 %% 1- is_simulation setting: 

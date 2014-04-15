@@ -8,7 +8,7 @@
 % Dependencies: y - composite signal output
 % Output: y_ch - composite signal gone through channel response
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 % disp('Channel')
 

@@ -4,6 +4,8 @@
 %
 % Dependencies: y_ch - composite signal gone through channel response
 % Output: rx_output - receiver block output signal
+%
+% Created: 02-03-2014
 
 % disp('Receiver Block')
 

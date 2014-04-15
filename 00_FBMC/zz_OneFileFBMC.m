@@ -2,8 +2,9 @@
 %
 % Burak Dayi
 %
+% Created: 17-03-2014
 
-close all
+%close all
 clear all
 clc
 fprintf('--------------\n-----FBMC-----\n--------------\n\n');
@@ -13,10 +14,11 @@ fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 
 % 2.b Main mode parameters
 %---- General filterbank parameters ----%
-K = 4; % overlapping factor
+K = 4; % overlapping factor 
 M = 512; % number of subcarriers
-% num_frames = 0; % number of data frames in each FBMC block
-num_symbols = 50; % number of symbols sent back to back in one transmission
+num_frames = 20; % number of data frames in each FBMC block
+syms_per_frame = 50; %number of symbols per FBMC frame
+num_symbols = num_frames*syms_per_frame; % total number of data symbols
 num_samples = M; %number of samples in a vector
 modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
 bits_per_sample = log2(modulation); %num of bits carried by one sample
@@ -33,25 +35,28 @@ delay = K*M+1-lp; %delay requirement
 P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
 
 %---- Preamble creation ----%
-preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+%preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
+%preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
+%preamble = [repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+preamble = [repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
 
 %---- Channel settings ----%
 % noise settings
-noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
-SNR = 10; % SNR of the channel. ideal=0 to see the effects on channel
+noisy = 1; %set 1 for SNR values to affect channel, set 0 for noiseless channel
+SNR = 20; % SNR of the channel. ideal=0 to see the effects on channel
 
 %rayleigh channel settings
-fading = 0; % set 0 for distortionless channel, set 1 for rayleigh channel
+fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
 bw = 5e+6; % Transmission Bandwidth
 channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
 profile ='EPA'; %Channel profile
 [delay_a pow_a] = LTE_channels (profile,bw);
-ch_resp = rayleighchan(1/bw,50,delay_a,pow_a); %channel modelled
-ch_h.storeHistory = 1;
-ch_h.storePathGains =1;
+ch_resp = rayleighchan(1/bw,10,delay_a,pow_a); %channel model
+ch_resp.storeHistory = 1;
+ch_resp.storePathGains =1;
 
 %---- Equalizer settings ----%
-eq_select = 3; % selection of equalizer type 1: one tap, 
+eq_select = 2; % selection of equalizer type 1: one tap, 
 % 2: three tap w/ geometric interp, 3: three tap w/ linear interp
 % 4: no equalizer
 
@@ -86,9 +91,9 @@ end
 % 3- Print the configuration and ask for confirmation from user
 disp('Configuration:')
 if noisy
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d, SNR=%d dB', K,M,num_symbols,modulation,num_bits,SNR));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=%d dB', K,M,num_symbols,modulation,num_bits,fading,eq_select,SNR));
 else
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d, SNR=Ideal', K,M,num_symbols,modulation,num_bits));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=Ideal', K,M,num_symbols,modulation,num_bits,fading,eq_select));
 end
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
 %pause;
@@ -126,10 +131,12 @@ for k=1:M
 end
 
 % preamble insertion
-oqam_m = [preamble oqam_m];
+for i=num_frames:-1:1
+    oqam_m = [oqam_m(:,1:2*(i-1)*syms_per_frame) preamble oqam_m(:,2*(i-1)*syms_per_frame+1:end)];
+end
 % 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
-num_symbols = num_symbols+1;
+num_symbols = num_symbols+num_frames; %num_frames= no of preamble
 % %soru: is preamble oqam modulated or to be modulated???????????????
 % %ans: the preamble takes 3 subsymbol duration with given setup. that
 % %indicates that the preamble will be appended to the oqam modulated data
@@ -317,19 +324,25 @@ disp('+Receiver Block is processed.');
 %% Subchannel_processing
 
 % remove preamble
-scp_preamble = rx_output(:,2*K-1:2*K);
+scp_preamble = rx_output(:,2*K-1:2*(syms_per_frame+1):end-(2*K-1));
 scp_data = rx_output;
 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
-num_symbols = num_symbols-1;
+num_symbols = num_symbols-num_frames; %num_frames= no of preamble
 % 
 % %estimation of channel
-ch_resp_est = scp_preamble(:,1)./(preamble(:,1)*sumfactor);
+for i=1:num_frames
+    ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,1)*sumfactor);
+end
 
 if eq_select == 1
     % one tap equalizer
-    for i=2*K+1:2*K+2*num_symbols
-        sp_output(:,i-2*K) = scp_data(:,i)./ch_resp_est;
+    for ii=1:num_frames
+        sp_output(:,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
+            = scp_data(:,2*K+1+(ii-1)*2*syms_per_frame+2*(ii-1):2*K+2*syms_per_frame+(ii-1)*2*syms_per_frame+2*(ii-1));
+        for iii=1:2*syms_per_frame
+            sp_output(:,1+(ii-1)*2*syms_per_frame+iii-1)=sp_output(:,1+(ii-1)*2*syms_per_frame+iii-1)./ch_resp_est(:,ii);
+        end
     end
 elseif eq_select == 2 || eq_select == 3
     % % three tap equalizer
@@ -337,26 +350,39 @@ elseif eq_select == 2 || eq_select == 3
     eq_coefs = zeros(M,3);
     ro = .5;
     for i=1:M
-        EQi = 1/ch_resp_est(i);
-        EQ_min = 1/ch_resp_est(mod(i-1-1,M)+1);
-        EQ_plu = 1/ch_resp_est(mod(i,M)+1);
-        eqs = [EQ_min EQi EQ_plu];
-        if eq_select == 2
-            %   % geometric interpolation proposed by Aurelio & Bellanger
-            %   % the coefficient computation from same paper
-            %   % it's also approach 2 section 4.1.2 from D3.1
-            EQ1 = EQ_min*(EQi/EQ_min)^ro;
-            EQ2 = EQi*(EQ_plu/EQi)^ro;
-         
-        elseif eq_select == 3
-            %   % approach 1 D3.1 section 4.1.1 linear interpolation
-            EQ1 = (EQ_min+EQi)/2;
-            EQ2 = (EQi+EQ_plu)/2;            
+        for ii=1:num_frames
+            EQi = 1/ch_resp_est(i,ii);
+            EQ_min = 1/ch_resp_est(mod(i-1-1,M)+1,ii);
+            EQ_plu = 1/ch_resp_est(mod(i,M)+1,ii);
+            eqs = [EQ_min EQi EQ_plu];
+   
+            if eq_select == 2
+                %   % geometric interpolation proposed by Aurelio & Bellanger
+                %   % the coefficient computation from same paper
+                %   % it's also approach 2 section 4.1.2 from D3.1
+                EQ1 = EQ_min*(EQi/EQ_min)^ro;
+                EQ2 = EQi*(EQ_plu/EQi)^ro;
+
+            elseif eq_select == 3
+                %   % approach 1 D3.1 section 4.1.1 linear interpolation
+                EQ1 = (EQ_min+EQi)/2;
+                EQ2 = (EQi+EQ_plu)/2;            
+            end
+            
+            eq_coefs(i,1)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)+j*(EQ2-EQ1))/4;
+            eq_coefs(i,2)= (EQ1+EQ2)/2;
+            eq_coefs(i,3)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)-j*(EQ2-EQ1))/4; 
+            
+            % %     re im re im ...
+            equalizer_output =conv(eq_coefs(i,:),scp_data(i,:));
+            sp_output(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
+                = equalizer_output(2*K+1+(ii-1)*2*(syms_per_frame+1)+1:1+2*K+2*syms_per_frame+(ii-1)*2*(syms_per_frame+1));
+            % 2*K+1+1+(ii-1)*2*(syms_per_frame+1):2*K+2*syms_per_frame+1+(ii-1)*2*(syms_per_frame+1)
+            % sp_output(i,:) = equalizer_output(i,2*K+1+1:2*K+2*num_symbols+1);
+            
         end
         
-        eq_coefs(i,1)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)+j*(EQ2-EQ1))/4;
-        eq_coefs(i,2)= (EQ1+EQ2)/2;
-        eq_coefs(i,3)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)-j*(EQ2-EQ1))/4; 
+        
     
 %         prim = upsample(conv(eq_coefs(i,:),scp_data(i,1:2:end-1)),2);
 %         seco = circshift((upsample(conv(eq_coefs(i,:),scp_data(i,2:2:end)),2)).',1).';
@@ -365,11 +391,10 @@ elseif eq_select == 2 || eq_select == 3
     % %     re re ... im im ...
     %     sp_output(i,:) = psps(2:2*num_symbols+1);
     
-    % %     re im re im ...
-        equalizer_output(i,:)=conv(eq_coefs(i,:),scp_data(i,:));
+    
     
         %sample
-        sp_output(i,:) = equalizer_output(i,2*K+1+1:2*K+2*num_symbols+1);
+%        sp_output(i,:) = equalizer_output(i,2*K+1+1:2*K+2*num_symbols+1);
     end
 elseif eq_select == 4 %no equalizer
     for i=2*K+1:2*K+2*num_symbols
@@ -377,39 +402,6 @@ elseif eq_select == 4 %no equalizer
     end
 end
 
-
-% % three tap equalizer
-% % coef computation
-% eq_coefs = zeros(M,3);
-% ro = .5;
-% for i=1:M
-%     eq_center = 1/ch_resp_est(i);
-%     eq_lower = 1/ch_resp_est(mod(i-1-1,M)+1);
-%     eq_upper = 1/ch_resp_est(mod(i,M)+1);
-%     eqs = [eq_lower eq_center eq_upper];
-% %     % geometric interpolation proposed by Aurelio & Bellanger
-%     eq_coefs(i,1)= eqs(1)*(eqs(2)/eqs(1))^ro;
-%     eq_coefs(i,2)= eqs(2);
-%     eq_coefs(i,3)= eqs(2)*(eqs(3)/eqs(2))^ro;
-% 
-%     prim = upsample(conv(eq_coefs(i,:),scp_data(i,1:2:end-1)),2);
-%     seco = circshift((upsample(conv(eq_coefs(i,:),scp_data(i,2:2:end)),2)).',1).';
-%     psps = prim+seco;    
-%     
-% % %     re re re ... im im im ...
-% %     sp_output(i,:) = psps(2:2*num_symbols+1);
-% 
-% % %     re im re im ...
-%     equalizer_output(i,:)=conv(eq_coefs(i,:),scp_data(i,:));
-% 
-%     %sample
-%     sp_output(i,:) = equalizer_output(i,2*K+1+1:2*K+2*num_symbols+1);
-% end
-
-% equalizer_output=conv(eq_coefs,scp_data);
-
-
-% sp_output = scp_data;
 disp('+Subchannel processing is done.');
 %% OQAM_Postprocessing
 %
@@ -453,6 +445,7 @@ disp('+Symbol Estimation is done.');
 
 [error1,rate2] = symerr(m,m_est);
 err=abs(m-m_est);
+bit_err = abs(bits-bits_est);
 % dif_qam =[qam_m qam_est];
 % error2 = symerr(qam_m(:,4:end),qam_est);
 % dif_oqam =[oqam_m oqam_demod];
@@ -462,6 +455,16 @@ err=abs(m-m_est);
 
 disp(sprintf('Number of errorneous samples: %d/%d', error1,num_symbols*M))
 disp(sprintf('SER: %f', rate2));
+%     disp(sprintf('Number of errors qam_dif: %d', error2))
+%     disp(sprintf('Number of errors oqasdasdam_dif: %d', error3))
 disp(sprintf('Number of bit errors: %d/%d', error4,num_bits))
 disp(sprintf('BER: %f\n', rate))
-disp('+Calculations and Statistics..');
+
+for i=1:num_frames
+    num_errored(i) = length(find(err(:,i)));
+    num_errored_bits(i) = length(find(bit_err(1+(i-1)*num_bits/num_frames:i*num_bits/num_frames)));
+end
+
+plot(1:num_frames,num_errored)
+figure
+plot(1:num_frames,num_errored_bits)

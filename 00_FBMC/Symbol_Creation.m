@@ -8,7 +8,7 @@
 % Dependencies: modulation, num_symbols, bits_per_sample, M, num_bits
 % Output: qam_m - QAM modulated message, bits - transmitted bits
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 % disp('Symbol Creation')
 

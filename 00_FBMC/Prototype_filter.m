@@ -8,7 +8,7 @@
 % Dependencies: lp, K, M, delay, P
 % Output: h - prototype filter coefficients in time domain
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 % disp('Prototype filter design')
 

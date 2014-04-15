@@ -8,7 +8,7 @@
 % Dependencies: sp_output - processed signal output 
 % Output: oqam_demod - estimated message
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 % disp('OQAM postprocessing')
 

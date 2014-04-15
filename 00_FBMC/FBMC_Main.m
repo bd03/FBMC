@@ -21,7 +21,7 @@
 % Subchannel processing
 % Calculations and statistics
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 close all
 clear all

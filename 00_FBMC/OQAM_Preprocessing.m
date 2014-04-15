@@ -8,7 +8,7 @@
 % Dependencies: qam_m - QAM modulated message, M, num_symbols
 % Output: oqam_m - OQAM modulated message
 %
-% Last updated: 18-03-2014
+% Created: 02-03-2014
 
 % disp('OQAM preprocessing')
 
