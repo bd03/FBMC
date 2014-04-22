@@ -16,7 +16,7 @@
 %% 1- is_simulation setting: 
 % set it 1 if you want to run a simulation with selected parameters. 
 % set it 0 if you want to run only one try with selected parameters.
-is_simulation = false;
+is_simulation = true;
 
 %% 2- Set parameters for desired mode.
 if is_simulation
@@ -37,12 +37,12 @@ if is_simulation
     %---------------------------------
     % These are the values that are taken into account during the project.
     qam_sizes = [4 16 64 128 256]; % supported QAM modulation sizes
-    SNR_array = 0:1:15; % supported SNR value(s) in dB.
+    SNR_array = 0:1:30; % supported SNR value(s) in dB.
     M_array = 2.^(2:10);
 
     %---- Channel settings ----%
     % noise settings
-    noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
+    noisy = 1; %set 1 for SNR values to affect channel, set 0 for noiseless channel
     
     % rayleigh channel settings
     fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
@@ -64,11 +64,11 @@ if is_simulation
     num_frames = 20; % number of data frames in each FBMC block
     syms_per_frame = 10; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
-    num_trials = 3; % number of trials desired
+    num_trials = 10; % number of trials desired
     
     M_arr=2.^(9); % array of M's that will be used in the simulation
     q_arr=[4]; % array of QAM modes that will be used in sim.
-    s_arr=[1]; % array of SNR values that will be used in the simulation
+    s_arr=10:12; % array of SNR values that will be used in the simulation
         
     %---- Parameter check ----%
     if K>4 || K<2
@@ -98,7 +98,7 @@ if is_simulation
     
     %---- Initialization of data containers ----%
     % BER matrix that will store BER values
-    BER=zeros(length(M_array),length(qam_sizes),length(SNR_array));
+    BER=zeros(length(M_array),length(qam_sizes),length(s_arr));
     % CONF file that will store configuration of the simulation parameters
     c1 = clock; % time stamp
     conf=struct('M_val',M_arr,...

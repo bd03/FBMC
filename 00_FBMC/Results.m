@@ -23,7 +23,7 @@ dif_m = [m m_est];
 if is_simulation
     M_x= find(M_array==M);
     mod_x = find(qam_sizes==modulation);
-    snr_x = find(SNR_array==SNR);
+    snr_x = find(s_arr==SNR);
     BER(M_x, mod_x, snr_x) = BER(M_x, mod_x, snr_x)+rate/num_trials;
     if tt==num_trials
         disp(sprintf('BER = %f', BER(M_x, mod_x, snr_x)));

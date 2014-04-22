@@ -22,7 +22,7 @@ function varargout = showplot(varargin)
 
 % Edit the above text to modify the response to help showplot
 
-% Last Modified by GUIDE v2.5 15-Apr-2014 16:23:17
+% Last Modified by GUIDE v2.5 15-Apr-2014 17:38:59
 
 % Created: 19-03-2014
 
@@ -340,6 +340,12 @@ function togglebutton28_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of togglebutton28
 update_plot(handles);
 
+% --------------------------------------------------------------------
+function uipushtool3_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to uipushtool3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+msgbox(strcat(evalc('handles.conf'),sprintf('\n'),evalc('handles.conf.resp'),sprintf('\nexplanation:\n'),handles.conf.explanation))
 
 function update_plot(handles)
 % toggle1: M=4
@@ -388,6 +394,9 @@ for qw=handles.conf(1).M_val
     for zx=handles.conf(1).mod_sch
         if get(handles.handles_M(log2(qw)-1),'Value')==1 && get(handles.handles_mod(find(handles.all_mod==zx)),'Value')==1 && ...
                 strcmp(get(handles.handles_M(log2(qw)-1),'Enable'),'on') && strcmp(get(handles.handles_mod(find(handles.all_mod==zx)),'Enable'),'on') 
+%             handles.conf(1).SNR_val
+%             disp('annen')
+%             handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx))
             modifier = strcat(lines(mod(log2(qw)-1-1,2)+1),colors(mod(log2(qw)-1,5)+1),markers(mod(find(handles.all_mod==zx)-1,5)+1));
             semilogy(handles.conf(1).SNR_val,handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx),:),modifier,...
                 'LineWidth',1.5,'MarkerSize',8);
@@ -400,7 +409,6 @@ end
 xlabel('SNR (dB)');
 ylabel('BER');
 hold off
-
 if ~flag_at_least_one
     semilogy(1,1);
 end
@@ -523,3 +531,6 @@ guidata(hObject, handles);
 pushbutton2_Callback(hObject, 0, handles)
 pushbutton4_Callback(hObject, 0, handles)
 update_plot(handles)
+
+
+
