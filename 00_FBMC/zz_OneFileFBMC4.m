@@ -1,11 +1,13 @@
-%% zz_OneFileFBMC2.m
+%% zz_OneFileFBMC4.m
 %
 % Burak Dayi
 
-% Sending multiple frames with POP estimation
+% Sending multiple frames with preambles of three oqam symbols.
+% The estimation method is IAM !!without!! extra array of zeros prepended
+% before the preamble.
 
 %
-% Created: 15-04-2014
+% Created: 07-05-2014
 
 %close all
 clear all
@@ -19,8 +21,8 @@ fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 %---- General filterbank parameters ----%
 K = 4; % overlapping factor 
 M = 256; % number of subcarriers
-num_frames = 20; % number of data frames in each FBMC block
-syms_per_frame = 15; %number of symbols per FBMC frame
+num_frames = 11; % number of data frames in each FBMC block
+syms_per_frame = 10; %number of symbols per FBMC frame
 num_symbols = num_frames*syms_per_frame; % total number of data symbols
 num_samples = M; %number of samples in a vector
 modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
@@ -38,11 +40,10 @@ delay = K*M+1-lp; %delay requirement
 P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
 
 %---- Preamble creation ----%
-preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
-% preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
+preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
+%preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
 %preamble = [repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-% preamble = [repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
-
+% preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
 
 %---- Channel settings ----%
 % noise settings
@@ -53,13 +54,11 @@ SNR = 20; % SNR of the channel. ideal=0 to see the effects on channel
 fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
 bw = 5e+6; % Transmission Bandwidth
 channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
-profile ='EVA'; %Channel profile
+profile ='EPA'; %Channel profile
 [delay_a pow_a] = LTE_channels (profile,bw);
-ch_resp = rayleighchan(1/bw,10,delay_a,pow_a); %channel model
-% ch_resp = stdchan(1/bw,10,'jtcOutUrbHRHAA');
+ch_resp = rayleighchan(1/bw,50,delay_a,pow_a); %channel model
 ch_resp.storeHistory = 1;
 ch_resp.storePathGains =1;
-ch_resp.ResetBeforeFiltering=1;
 
 %---- Equalizer settings ----%
 eq_select = 2; % selection of equalizer type 1: one tap, 
@@ -97,9 +96,9 @@ end
 % 3- Print the configuration and ask for confirmation from user
 disp('Configuration:')
 if noisy
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=%d dB', K,M,num_symbols,modulation,num_bits,fading,eq_select,SNR));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''IAM'', SNR=%d dB', K,M,num_symbols,modulation,num_bits,fading,eq_select,SNR));
 else
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=Ideal', K,M,num_symbols,modulation,num_bits,fading,eq_select));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''IAM'', SNR=Ideal', K,M,num_symbols,modulation,num_bits,fading,eq_select));
 end
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
 %pause;
@@ -147,18 +146,19 @@ for i=num_frames:-1:1
 end
 % 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
-num_symbols = num_symbols+num_frames; %num_frames= no of preamble
+%num_symbols = num_symbols+num_frames*2; %num_frames= no of preambles
+num_oqam_subsymbols = 2*num_symbols+3*num_frames; %num_frames= no of preambles
+%in this file all the computation will depend on num_oqam_subsymbols.
+
 % %soru: is preamble oqam modulated or to be modulated???????????????
 % %ans: the preamble takes 3 subsymbol duration with given setup. that
 % %indicates that the preamble will be appended to the oqam modulated data
 % %diger cvp: D3.1'de oyle demiyor ama
-
-
 disp('+OQAM Preprocessing is done.');
 %% Transmitter
 
-y = zeros(1,K*M+(2*num_symbols-1)*M/2); %composite signal is in series. (k>=1)
-jp_y = zeros(1,K*M+(2*num_symbols-1)*M/2); 
+y = zeros(1,K*M+(num_oqam_subsymbols-1)*M/2); %composite signal is in series. (k>=1)
+jp_y = zeros(1,K*M+(num_oqam_subsymbols-1)*M/2); 
 
 % beta multiplier will be an exponential value multiplied by (-1)^kn where
 % k is the subchannel number and n is subsymbol index. The subsymbol index
@@ -166,27 +166,29 @@ jp_y = zeros(1,K*M+(2*num_symbols-1)*M/2);
 % element. Therefore it simplifies the general equation for the first
 % element, we only need to compute exponential, in general. More
 % simplifications also may be made.
-beta = ones(1,2*num_symbols); % beta multiplier
-ifft_input = ones(M,2*num_symbols); % ifft input
+beta = ones(1,num_oqam_subsymbols); % beta multiplier
+ifft_input = ones(M,num_oqam_subsymbols); % ifft input
 
 
 % polyphase filter & beta coefficients for archive
 ppa = zeros(M,K);
-betas = zeros(M,2*num_symbols);
+betas = zeros(M,num_oqam_subsymbols);
 
 for k=1:M
-    bb = [exp(-j*2*pi*(k-1)*(lp-1)/(2*M)) ...
-        ((-1)^(k-1))*exp(-j*2*pi*(k-1)*(lp-1)/(2*M))];
+%     bb = [exp(-j*2*pi*(k-1)*(lp-1)/(2*M)) ...
+%         ((-1)^(k-1))*exp(-j*2*pi*(k-1)*(lp-1)/(2*M))];
+%     
+%     if lp==K*M-1 %special treatment due to extra delay inserted 
+%         bb=[(-1)^((k-1)*K) (-1)^((k-1)*(K+1))];
+%     end
+%     
+%     beta =[];
+%     
+%     for c = 1:num_oqam_subsymbols
+%         beta = [beta bb];
+%     end
     
-    if lp==K*M-1 %special treatment due to extra delay inserted 
-        bb=[(-1)^((k-1)*K) (-1)^((k-1)*(K+1))];
-    end
-    
-    beta =[];
-    
-    for c = 1:num_symbols
-        beta = [beta bb];
-    end
+    beta = ((-1).^((k-1)*(1:num_oqam_subsymbols)))*((-1).^((k-1)*K));
     
     betas(k,:)=beta;
     
@@ -200,7 +202,8 @@ end
 %ifft
 tx_ifft_output=ifft(ifft_input);
 jp_tx_ifft_output=ifft(jp_ifft_input);
-tx_poly_output = zeros(M,2*(K+num_symbols-1)); %output of polyphase filters will be stored in this
+% su anda bu gecerli degil % for now we are assuming that the number of frames are !even!
+% tx_poly_output = zeros(M,2*(K+num_oqam_subsymbols/2-1)); %output of polyphase filters will be stored in this
 %upsampler_output = zeros(M,M*(K+1)/2);
 
 
@@ -212,11 +215,11 @@ for k=1:M
     %%%%%%%%%%tx_poly_output(k,:) = conv(a,tx_ifft_output(k,:));
     %we seperated the real and imag part chains as advised in primer
     %document
-    tx_poly_output(k,:) = [conv(a,tx_ifft_output(k,1:2:2*num_symbols)) ...
-        conv(a,tx_ifft_output(k,2:2:2*num_symbols))];
+    tx_poly_output_1(k,:) = conv(a,tx_ifft_output(k,1:2:num_oqam_subsymbols)); %output of the 1st PPN
+    tx_poly_output_2(k,:) =conv(a,tx_ifft_output(k,2:2:num_oqam_subsymbols)); %output of the 2nd PPN
     ppa(k,:) = a;
-    jp_tx_poly_output(k,:) = [conv(a,jp_tx_ifft_output(k,1:2:2*num_symbols)) ...
-        conv(a,tx_ifft_output(k,2:2:2*num_symbols))];
+%     jp_tx_poly_output(k,:) = [conv(a,jp_tx_ifft_output(k,1:2:num_oqam_subsymbols)) ...
+%         conv(a,tx_ifft_output(k,2:2:num_oqam_subsymbols))];
 end
 
 save('ppa.mat','ppa');
@@ -231,12 +234,17 @@ save('betas.mat','betas');
 %     y(1,1+r*M/2:K*M+r*M/2)= y(1,1+r*M/2:K*M+r*M/2)+tx_poly_output(:,r+1).';
 % end
 
+% contribution from PPN1
+for r=0:K+ceil(num_oqam_subsymbols/2)-1-1
+    y(1,1+r*M:M+r*M) = y(1,1+r*M:M+r*M)+ tx_poly_output_1(:,r+1).';
+%     jp_y(1,1+r*M:M+r*M) = jp_y(1,1+r*M:M+r*M)+ jp_tx_poly_output(:,r+1).';
+%     y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output_2(:,r+1).';
+%     jp_y(1,1+M/2+r*M:M+M/2+r*M) = jp_y(1,1+M/2+r*M:M+M/2+r*M) + jp_tx_poly_output(:,r+K+num_symbols).';
+end
 
-for r=0:K+num_symbols-1-1
-    y(1,1+r*M:M+r*M) = y(1,1+r*M:M+r*M)+ tx_poly_output(:,r+1).';
-    jp_y(1,1+r*M:M+r*M) = jp_y(1,1+r*M:M+r*M)+ jp_tx_poly_output(:,r+1).';
-    y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output(:,r+K+num_symbols).';
-    jp_y(1,1+M/2+r*M:M+M/2+r*M) = jp_y(1,1+M/2+r*M:M+M/2+r*M) + jp_tx_poly_output(:,r+K+num_symbols).';
+% contribution from PPN2
+for r=0:K+floor(num_oqam_subsymbols/2)-1-1
+    y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output_2(:,r+1).';
 end
 
 % y will be sent thru the channel
@@ -269,23 +277,30 @@ disp('+Channel effects are applied.');
 
 %% Reception
 %% Receiver
-
 % the matrix that reshaped input samples would be stored in
-receiver_input = zeros(M,2*(K+num_symbols-1)); 
-jp_receiver_input = zeros(M,2*(K+num_symbols-1)); 
+receiver_input_1 = zeros(M,K+ceil(num_oqam_subsymbols/2)-1); 
+receiver_input_2 = zeros(M,K+floor(num_oqam_subsymbols/2)-1); 
+% jp_receiver_input = zeros(M,2*(K+num_symbols-1)); 
 
+% reshaping will be separated
 % reshaping (joint implementation of delay chain & downsamplers)
-for r=0:K+num_symbols-1-1
-%     y(1,1+r*M:M+r*M) = y(1,1+r*M:M+r*M)+ tx_poly_output(:,r+1).';
-%     y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output(:,r+K+1).';
-    receiver_input(:,r+1) = y_ch(1,1+r*M:M+r*M);
-    receiver_input(:,r+K+num_symbols) = y_ch(1,1+M/2+r*M:M+M/2+r*M);    
-    jp_receiver_input(:,r+1) = jp_y_ch(1,1+r*M:M+r*M);
-    jp_receiver_input(:,r+K+num_symbols) = jp_y_ch(1,1+M/2+r*M:M+M/2+r*M); 
+% PPN1
+for r=0:K+ceil(num_oqam_subsymbols/2)-1-1
+    receiver_input_1(:,r+1) = y_ch(1,1+r*M:M+r*M);
+%     receiver_input(:,r+K+num_symbols) = y_ch(1,1+M/2+r*M:M+M/2+r*M);    
+%     jp_receiver_input(:,r+1) = jp_y_ch(1,1+r*M:M+r*M);
+%     jp_receiver_input(:,r+K+num_symbols) = jp_y_ch(1,1+M/2+r*M:M+M/2+r*M); 
 end
 
-rx_poly_output = zeros(M,2*(K+num_symbols-1+K-1)); %output of polyphase filters will be stored in this
-rx_fft_input = zeros(M,2*num_symbols);
+for r=0:K+floor(num_oqam_subsymbols/2)-1-1
+    receiver_input_2(:,r+1) = y_ch(1,1+M/2+r*M:M+M/2+r*M);    
+%     jp_receiver_input(:,r+1) = jp_y_ch(1,1+r*M:M+r*M);
+%     jp_receiver_input(:,r+K+num_symbols) = jp_y_ch(1,1+M/2+r*M:M+M/2+r*M); 
+end
+
+rx_poly_output_1 = zeros(M,K+ceil(num_oqam_subsymbols/2)-1+K-1); %output of PPN1 will be stored in this
+rx_poly_output_2 = zeros(M,K+floor(num_oqam_subsymbols/2)-1+K-1); %output of PPN2 will be stored in this
+
 jp_rx_poly_output = zeros(M,2*(K+num_symbols-1+K-1)); %output of polyphase filters will be stored in this
 jp_rx_fft_input = zeros(M,2*num_symbols);
 
@@ -297,22 +312,28 @@ for k=1:M
     b = h(M-k+1:M:lp+1); % related polyphase filter coefficients sieved
     % b = a(M-i+1);
     % we use lp+1 b/c of the delay implemented in prototype filter design   
-    rx_poly_output(k,:) = [conv(receiver_input(k,1:(K+num_symbols-1)),b) ...
-        conv(receiver_input(k,(K+num_symbols):2*(K+num_symbols-1)),b)];
-    jp_rx_poly_output(k,:) = [conv(jp_receiver_input(k,1:(K+num_symbols-1)),b) ...
-        conv(jp_receiver_input(k,(K+num_symbols):2*(K+num_symbols-1)),b)];
+    rx_poly_output_1(k,:) = conv(receiver_input_1(k,:),b);
+    rx_poly_output_2(k,:) = conv(receiver_input_2(k,:),b);
+%     jp_rx_poly_output(k,:) = [conv(jp_receiver_input(k,1:(K+num_symbols-1)),b) ...
+%         conv(jp_receiver_input(k,(K+num_symbols):2*(K+num_symbols-1)),b)];
 %     rx_fft_input(k,:) = [rx_poly_output(k,K:K+num_symbols-1) ...
 %         rx_poly_output(k, 2*K+num_symbols-2+K:2*K+num_symbols-2+K+num_symbols-1)];
     ppb(k,:) = b;
 end
 
+% rearrangement
+len=K+ceil(num_oqam_subsymbols/2)-1+K-1+K+floor(num_oqam_subsymbols/2)-1+K-1;
+rx_fft_input = zeros(M,len);
+rx_fft_input(:,1:2:end)=rx_poly_output_1;
+rx_fft_input(:,2:2:end)=rx_poly_output_2;
+
 save('ppb.mat','ppb');
 
 % fft performed
-rx_fft_output=fft(rx_poly_output);
+rx_fft_output=fft(rx_fft_input);
 jp_rx_fft_output=fft(jp_rx_poly_output);
 
-rx_output = zeros(M,2*(num_symbols+K-1+K-1));
+rx_output = zeros(M,len);
 jp_rx_output = zeros(M,2*(num_symbols+K-1+K-1));
 
 % we convolve one sample with the entire filter. then at the receiver we
@@ -326,33 +347,36 @@ jp_rx_output = zeros(M,2*(num_symbols+K-1+K-1));
 sumfactor = sum(conv(ppa(1,:),ppb(1,:)));
 
 for k=1:M
-    bb = [exp(-j*2*pi*(k-1)*(lp+1)/(2*M)) ((-1)^(k-1))*exp(-j*2*pi*(k-1)*(lp+1)/(2*M))];
+%     bb = [exp(-j*2*pi*(k-1)*(lp+1)/(2*M)) ((-1)^(k-1))*exp(-j*2*pi*(k-1)*(lp+1)/(2*M))];
+%     
+%     if lp==K*M-1 %special treatment due to extra delay inserted 
+%         bb=[(-1)^((k-1)*K) (-1)^((k-1)*(K+1))];
+%     end
+%     
+%     beta =[];
+%     
+%     for c = 1:(num_symbols+K-1+K-1)
+%         beta = [beta bb];
+%     end
+%    
+    beta = ((-1).^((k-1)*(1:len)))*((-1).^((k-1)*K));
     
-    if lp==K*M-1 %special treatment due to extra delay inserted 
-        bb=[(-1)^((k-1)*K) (-1)^((k-1)*(K+1))];
-    end
-    
-    beta =[];
-    
-    for c = 1:(num_symbols+K-1+K-1)
-        beta = [beta bb];
-    end
-   
+%     betas(k,:)=beta;
     
     % ifft input is oqam_m on kth subchannel multiplied by beta multiplier
     % on that subchannel, in accordance with the order of the OQAM
     % subsymbol
     
     
-    rx_output(k,1:2:end-1) =  rx_fft_output(k,1:(num_symbols+K-1+K-1));
-    rx_output(k,2:2:end) =  rx_fft_output(k,(num_symbols+K-1+K-1)+1:2*(num_symbols+K-1+K-1));
+%     rx_output(k,1:2:end-1) =  rx_fft_output(k,1:(num_symbols+K-1+K-1));
+%     rx_output(k,2:2:end) =  rx_fft_output(k,(num_symbols+K-1+K-1)+1:2*(num_symbols+K-1+K-1));
     
-    rx_output(k,:) = rx_output(k,:).*beta;
+    rx_output(k,:) = rx_fft_output(k,:).*beta;
     
-    jp_rx_output(k,1:2:end-1) =  jp_rx_fft_output(k,1:(num_symbols+K-1+K-1));
-    jp_rx_output(k,2:2:end) =  jp_rx_fft_output(k,(num_symbols+K-1+K-1)+1:2*(num_symbols+K-1+K-1));
-    
-    jp_rx_output(k,:) = jp_rx_output(k,:).*beta;
+%     jp_rx_output(k,1:2:end-1) =  jp_rx_fft_output(k,1:(num_symbols+K-1+K-1));
+%     jp_rx_output(k,2:2:end) =  jp_rx_fft_output(k,(num_symbols+K-1+K-1)+1:2*(num_symbols+K-1+K-1));
+%     
+%     jp_rx_output(k,:) = jp_rx_output(k,:).*beta;
     
 %     rx_output(k,:) = [];(1/sumfactor)*[sum(rx_fft_output(k,1:2*K-1)) ...
 %         sum(rx_fft_output(k,2*K:2*(2*K-1)))].*beta; %(1/sumfactor)*
@@ -366,26 +390,26 @@ disp('+Receiver Block is processed.');
 
 % remove preamble
 scp_input = rx_output(:,2*K-1:end-(2*K-1)+1);
-jp_scp_input = jp_rx_output(:,2*K-1:end-(2*K-1)+1);
+jp_scp_input = jp_rx_output(:,2*K-1+2:end-(2*K-1+2)+1);
 
 for i=1:num_frames
-    scp_preamble(:,i) = scp_input(:,1+(i-1)*(syms_per_frame+1)*2);
-    scp_preamble2(:,i) = scp_input(:,1+(i-1)*(syms_per_frame+1)*2+1);
-    scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = scp_input(:,3+(i-1)*(syms_per_frame+1)*2:i*(syms_per_frame+1)*2);
-    jp_scp_preamble(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2);
-    jp_scp_preamble2(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2+1);
-    jp_scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = jp_scp_input(:,3+(i-1)*(syms_per_frame+1)*2:i*(syms_per_frame+1)*2);
+    scp_preamble(:,i) = scp_input(:,2+(i-1)*(syms_per_frame+1)*2+(i-1));
+%     scp_preamble2(:,i) = scp_input(:,1+3+(i-1)*(syms_per_frame+1)*2+(i-1));
+    scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = scp_input(:,4+(i-1)*(syms_per_frame+1)*2+(i-1):4+(i-1)*(syms_per_frame+1)*2+(i-1)+syms_per_frame*2-1);
+%     jp_scp_preamble(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2);
+%     jp_scp_preamble2(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2+1);
+%     jp_scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = jp_scp_input(:,3+(i-1)*(syms_per_frame+1)*2:i*(syms_per_frame+1)*2);
 
 end
 %scp_preamble = rx_output(:,2*K-1:2*(syms_per_frame+1):end-(2*K-1));
 %scp_data = rx_output;
 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
-num_symbols = num_symbols-num_frames; %num_frames= no of preamble
+% num_symbols = num_symbols-2*num_frames; %num_frames= no of preamble
 % 
 % %estimation of channel
 for i=1:num_frames
-    ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,1)*sumfactor);
+    ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,2)*sumfactor);
 %     ch_resp_est(:,i) = (jp_scp_preamble(:,i))./(preamble(:,1)*sumfactor);
 %     for ii=1:M
 %         if mod(ii-1,2) == 1 % even subcarrier
@@ -445,7 +469,7 @@ elseif eq_select == 2 || eq_select == 3
             % %     re im re im ...
             equalizer_output =conv(eq_coefs(i,:),rx_output(i,:));
             sp_output(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
-                = equalizer_output(2*K+1+(ii-1)*2*(syms_per_frame+1)+1:1+2*K+2*syms_per_frame+(ii-1)*2*(syms_per_frame+1));
+                = equalizer_output(2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1):2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1)+2*syms_per_frame-1);
 %             equalizer_output = conv(eq_coefs(i,:),scp_input(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame));
 %             sp_output(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
 %                 = equalizer_output(2:end-1);
@@ -472,7 +496,6 @@ end
 
 disp('+Subchannel processing is done.');
 %% OQAM_Postprocessing
-%
 
 oqam_demod = zeros(M,2*num_symbols); %the matrix that will store demodulated signal
 oqam_input = zeros(M,2*num_symbols); %this will hold after taking real part
@@ -491,8 +514,8 @@ for k=1:M
         oqam_demod(k,:) = oqam_input(k,:).*repmat([j 1],1,num_symbols);
     end
 end
+disp('+Symbol Estimation is done.');
 
-disp('+OQAM Postprocessing is done.');
 %% Symbol_Estimation
 %
 

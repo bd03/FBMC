@@ -45,7 +45,7 @@ noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
 SNR = 10; % SNR of the channel. ideal=0 to see the effects on channel
 
 %rayleigh channel settings
-fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
+fading = 0; % set 0 for distortionless channel, set 1 for rayleigh channel
 bw = 5e+6; % Transmission Bandwidth
 channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
 profile ='EPA'; %Channel profile
@@ -55,7 +55,7 @@ ch_h.storeHistory = 1;
 ch_h.storePathGains =1;
 
 %---- Equalizer settings ----%
-eq_select = 2; % selection of equalizer type 1: one tap, 
+eq_select = 4; % selection of equalizer type 1: one tap, 
 % 2: three tap w/ geometric interp, 3: three tap w/ linear interp
 % 4: no equalizer
 
@@ -90,9 +90,9 @@ end
 % 3- Print the configuration and ask for confirmation from user
 disp('Configuration:')
 if noisy
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d, SNR=%d dB', K,M,num_symbols,modulation,num_bits,SNR));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=%d dB', K,M,num_symbols,modulation,num_bits,fading,eq_select,SNR));
 else
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d, SNR=Ideal', K,M,num_symbols,modulation,num_bits));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=Ideal', K,M,num_symbols,modulation,num_bits,fading,eq_select));
 end
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
 %pause;

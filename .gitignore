@@ -7,3 +7,6 @@
 
 # Autosaved files should also be ignored:
 *.asv
+
+# all material in temp folder will be ignored
+00_FBMC/temp/

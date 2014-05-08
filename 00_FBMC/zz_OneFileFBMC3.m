@@ -1,11 +1,13 @@
-%% zz_OneFileFBMC2.m
+%% zz_OneFileFBMC3.m
 %
 % Burak Dayi
 
-% Sending multiple frames with POP estimation
+% Sending multiple frames with preambles of three oqam symbols.
+% The estimation method is IAM with one extra array of zeros prepended
+% before the preamble.
 
 %
-% Created: 15-04-2014
+% Created: 07-05-2014
 
 %close all
 clear all
@@ -20,7 +22,7 @@ fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 K = 4; % overlapping factor 
 M = 256; % number of subcarriers
 num_frames = 20; % number of data frames in each FBMC block
-syms_per_frame = 15; %number of symbols per FBMC frame
+syms_per_frame = 20; %number of symbols per FBMC frame
 num_symbols = num_frames*syms_per_frame; % total number of data symbols
 num_samples = M; %number of samples in a vector
 modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
@@ -38,11 +40,10 @@ delay = K*M+1-lp; %delay requirement
 P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
 
 %---- Preamble creation ----%
-preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
-% preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
+%preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
+%preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
 %preamble = [repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-% preamble = [repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
-
+preamble = [zeros(M,1) zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
 
 %---- Channel settings ----%
 % noise settings
@@ -53,16 +54,14 @@ SNR = 20; % SNR of the channel. ideal=0 to see the effects on channel
 fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
 bw = 5e+6; % Transmission Bandwidth
 channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
-profile ='EVA'; %Channel profile
+profile ='EPA'; %Channel profile
 [delay_a pow_a] = LTE_channels (profile,bw);
-ch_resp = rayleighchan(1/bw,10,delay_a,pow_a); %channel model
-% ch_resp = stdchan(1/bw,10,'jtcOutUrbHRHAA');
+ch_resp = rayleighchan(1/bw,50,delay_a,pow_a); %channel model
 ch_resp.storeHistory = 1;
 ch_resp.storePathGains =1;
-ch_resp.ResetBeforeFiltering=1;
 
 %---- Equalizer settings ----%
-eq_select = 2; % selection of equalizer type 1: one tap, 
+eq_select = 3; % selection of equalizer type 1: one tap, 
 % 2: three tap w/ geometric interp, 3: three tap w/ linear interp
 % 4: no equalizer
 
@@ -97,9 +96,9 @@ end
 % 3- Print the configuration and ask for confirmation from user
 disp('Configuration:')
 if noisy
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=%d dB', K,M,num_symbols,modulation,num_bits,fading,eq_select,SNR));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''IAM'', SNR=%d dB', K,M,num_symbols,modulation,num_bits,fading,eq_select,SNR));
 else
-    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=Ideal', K,M,num_symbols,modulation,num_bits,fading,eq_select));
+    disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nfading=%d, equalizer=%d, estimation=''IAM'', SNR=Ideal', K,M,num_symbols,modulation,num_bits,fading,eq_select));
 end
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
 %pause;
@@ -147,13 +146,11 @@ for i=num_frames:-1:1
 end
 % 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
-num_symbols = num_symbols+num_frames; %num_frames= no of preamble
+num_symbols = num_symbols+num_frames*2; %num_frames= no of preamble
 % %soru: is preamble oqam modulated or to be modulated???????????????
 % %ans: the preamble takes 3 subsymbol duration with given setup. that
 % %indicates that the preamble will be appended to the oqam modulated data
 % %diger cvp: D3.1'de oyle demiyor ama
-
-
 disp('+OQAM Preprocessing is done.');
 %% Transmitter
 
@@ -269,7 +266,6 @@ disp('+Channel effects are applied.');
 
 %% Reception
 %% Receiver
-
 % the matrix that reshaped input samples would be stored in
 receiver_input = zeros(M,2*(K+num_symbols-1)); 
 jp_receiver_input = zeros(M,2*(K+num_symbols-1)); 
@@ -366,26 +362,26 @@ disp('+Receiver Block is processed.');
 
 % remove preamble
 scp_input = rx_output(:,2*K-1:end-(2*K-1)+1);
-jp_scp_input = jp_rx_output(:,2*K-1:end-(2*K-1)+1);
+jp_scp_input = jp_rx_output(:,2*K-1+2:end-(2*K-1+2)+1);
 
 for i=1:num_frames
-    scp_preamble(:,i) = scp_input(:,1+(i-1)*(syms_per_frame+1)*2);
-    scp_preamble2(:,i) = scp_input(:,1+(i-1)*(syms_per_frame+1)*2+1);
-    scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = scp_input(:,3+(i-1)*(syms_per_frame+1)*2:i*(syms_per_frame+1)*2);
-    jp_scp_preamble(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2);
-    jp_scp_preamble2(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2+1);
-    jp_scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = jp_scp_input(:,3+(i-1)*(syms_per_frame+1)*2:i*(syms_per_frame+1)*2);
+    scp_preamble(:,i) = scp_input(:,3+(i-1)*(syms_per_frame+2)*2);
+    scp_preamble2(:,i) = scp_input(:,1+3+(i-1)*(syms_per_frame+2)*2);
+    scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = scp_input(:,5+(i-1)*(syms_per_frame+2)*2:5+(i-1)*(syms_per_frame+2)*2+syms_per_frame*2-1);
+%     jp_scp_preamble(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2);
+%     jp_scp_preamble2(:,i) = jp_scp_input(:,1+(i-1)*(syms_per_frame+1)*2+1);
+%     jp_scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = jp_scp_input(:,3+(i-1)*(syms_per_frame+1)*2:i*(syms_per_frame+1)*2);
 
 end
 %scp_preamble = rx_output(:,2*K-1:2*(syms_per_frame+1):end-(2*K-1));
 %scp_data = rx_output;
 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
-num_symbols = num_symbols-num_frames; %num_frames= no of preamble
+num_symbols = num_symbols-2*num_frames; %num_frames= no of preamble
 % 
 % %estimation of channel
 for i=1:num_frames
-    ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,1)*sumfactor);
+    ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,3)*sumfactor);
 %     ch_resp_est(:,i) = (jp_scp_preamble(:,i))./(preamble(:,1)*sumfactor);
 %     for ii=1:M
 %         if mod(ii-1,2) == 1 % even subcarrier
@@ -445,7 +441,7 @@ elseif eq_select == 2 || eq_select == 3
             % %     re im re im ...
             equalizer_output =conv(eq_coefs(i,:),rx_output(i,:));
             sp_output(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
-                = equalizer_output(2*K+1+(ii-1)*2*(syms_per_frame+1)+1:1+2*K+2*syms_per_frame+(ii-1)*2*(syms_per_frame+1));
+                = equalizer_output(2*K+2+1+(ii-1)*2*(syms_per_frame+2)+1:1+2+2*K+2*syms_per_frame+(ii-1)*2*(syms_per_frame+2));
 %             equalizer_output = conv(eq_coefs(i,:),scp_input(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame));
 %             sp_output(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
 %                 = equalizer_output(2:end-1);
@@ -472,7 +468,6 @@ end
 
 disp('+Subchannel processing is done.');
 %% OQAM_Postprocessing
-%
 
 oqam_demod = zeros(M,2*num_symbols); %the matrix that will store demodulated signal
 oqam_input = zeros(M,2*num_symbols); %this will hold after taking real part
@@ -491,8 +486,8 @@ for k=1:M
         oqam_demod(k,:) = oqam_input(k,:).*repmat([j 1],1,num_symbols);
     end
 end
+disp('+Symbol Estimation is done.');
 
-disp('+OQAM Postprocessing is done.');
 %% Symbol_Estimation
 %
 

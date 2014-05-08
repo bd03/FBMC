@@ -39,4 +39,3 @@ end
 %   c_imp_sampled(i+1) = sum(pow_a_lin(pos_a==i));
 % end
 %   ci_imp_out = sqrt((c_imp_sampled.^2./sum(c_imp_sampled.^2)));
-%          
