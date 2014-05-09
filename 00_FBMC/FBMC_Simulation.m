@@ -38,13 +38,17 @@ for M=M_arr
     delay = K*M+1-lp; %delay requirement
     num_samples = M; %number of samples in a vector
     
-    
-    %---- Preamble creation ----%
-    preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
-    %preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
-    %preamble = [repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-    %preamble = [repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
-    %preamble =  [repmat([-3 -3 -1 -1 1 1 3 3].',M/8,1) zeros(M,1)];
+    % IAM preambles 
+    preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+    % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
+    % preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+    % POP preambles
+    % preamble = [repmat([1 -1].',M/2,1) zeros(M,1)];
+    % IAM4 preambles
+    % preamble = [zeros(M,1) zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+    if strcmp(estimation_method,'IAM4')
+        preamble =[zeros(M,1) preamble];
+    end 
     
     Prototype_filter;
     %disp('+Prototype filter is designed.');
@@ -89,11 +93,14 @@ c2=clock;
 delete('BER*.mat');
 save(sprintf('BER%d-%d-%d-%d-%d-Final.mat', c2(1:5)),'BER');
 try
-    a=ls('CONF2*'); 
+    a=ls('CONF2*');
+    if ~strcmp(version('-release'),'2013b')
+        a=a(1:end-1);
+    end
     load(a);
     conf.ended=c2;
     conf.time_elapsed = etime(conf.ended,conf.started);
-    movefile(a(1,:),sprintf('CONF%d-%d-%d-%d-%d-Final.mat',conf.ended(1:5)));
+    movefile(a,sprintf('CONF%d-%d-%d-%d-%d-Final.mat',conf.ended(1:5)));
     save(sprintf('CONF%d-%d-%d-%d-%d-Final.mat',conf.ended(1:5)),'conf');
 catch err
 end

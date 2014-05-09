@@ -22,14 +22,14 @@ elseif type == 'EVA' % Moderate selectivity
 elseif type == 'ETU' % High selectivity
      ci_imp = zeros(1,127);
      delay_a = [0 50 120 200 230 500 1600 2300 5000]*1e-9;
-     pow_a = [-1 -1.0 -1.0 -1.0 0 0 0 -3 -5 -7];
+     pow_a = [-1 -1.0 -1.0 0 0 0 -3 -5 -7];
 
 else
     error('Invalid channel profile selection');
 end
 
 
-% pow_a_lin = 10.^(pow_a./10);
+pow_a_lin = 10.^(pow_a./10);
 % 
 % %Making the sampled channel
 % tss = 1./bandw;

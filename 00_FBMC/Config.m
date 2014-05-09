@@ -47,14 +47,24 @@ if is_simulation
     % rayleigh channel settings
     fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
     bw = 5e+6; % Transmission Bandwidth
-    max_doppler_shift = 10; %max. doppler shift in terms of hertz
+    max_doppler_shift = 0; %max. doppler shift in terms of hertz
     channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
     profile ='EPA'; %Channel profile
-    [delay_a pow_a] = LTE_channels (profile,bw);
+    [delay_a, pow_a] = LTE_channels (profile,bw);
     ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
-    ch_resp.storeHistory = 1;
+    if max_doppler_shift>0
+        ch_resp.storeHistory = 1;
+    end
     ch_resp.storePathGains =1;
+    
+    %---- Channel estimation settings ----%
+    % method
+    valid_methods = ['IAM', 'IAM4']; % 'POP' may be added later.
+    estimation_method = 'IAM';
 
+    % preamble
+    
+    
     %---- Equalizer settings ----%
     eq_select = 2; % selection of equalizer type 1: one tap, 
     % 2: three tap w/ geometric interp, 3: three tap w/ linear interp
@@ -64,11 +74,11 @@ if is_simulation
     num_frames = 20; % number of data frames in each FBMC block
     syms_per_frame = 10; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
-    num_trials = 10; % number of trials desired
+    num_trials = 1; % number of trials desired
     
-    M_arr=2.^(9); % array of M's that will be used in the simulation
+    M_arr=2.^(7:9); % array of M's that will be used in the simulation
     q_arr=[4]; % array of QAM modes that will be used in sim.
-    s_arr=10:12; % array of SNR values that will be used in the simulation
+    s_arr=10:13; % array of SNR values that will be used in the simulation
         
     %---- Parameter check ----%
     if K>4 || K<2
@@ -96,6 +106,11 @@ if is_simulation
         error('eq_select should be an integer in range [1 4].');
     end
     
+    if ~ismember(valid_methods,estimation_method)
+        estimation_method
+        error('estimation_method should be either IAM, IAM4 or POP.');
+    end
+    
     %---- Initialization of data containers ----%
     % BER matrix that will store BER values
     BER=zeros(length(M_array),length(qam_sizes),length(s_arr));
@@ -114,11 +129,13 @@ if is_simulation
         'ended',[],...
         'mode','FBMC',...
         'time_elapsed',0,...
-        'ideal',noisy,...
+        'noisy',noisy,...
+        'fading',fading,...
         'resp',ch_resp,...
         'ch_profile', profile,...
+        'estimation_method',estimation_method,...
         'explanation','Blank',...
-        'version', 3);
+        'version', 4);
     save(sprintf('CONF%d-%d-%d-%d-%d.mat', c1(1:5)),'conf');
     
 else
@@ -126,9 +143,9 @@ else
     % 2.b Main mode parameters
     %---- General filterbank parameters ----%
     K = 4; % overlapping factor 
-    M = 512; % number of subcarriers
-    num_frames = 20; % number of data frames in each FBMC block
-    syms_per_frame = 30; %number of symbols per FBMC frame
+    M = 256; % number of subcarriers
+    num_frames = 10; % number of data frames in each FBMC block
+    syms_per_frame = 10; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
     num_samples = M; %number of samples in a vector
     modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
@@ -145,30 +162,45 @@ else
     % (that might be come in handy in future) for reference
     P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
 
-    %---- Preamble creation ----%
-    preamble = [repmat([1 1 -1 -1].',M/4,1) zeros(M,1)]; %IAM
-    %preamble = [repmat([1 -1].',M/2,1) zeros(M,1)]; %POP
-    %preamble = [repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-    %preamble = [repmat([1 -1 -1 1].',M/4,1) zeros(M,1)]; %IAM
-    %preamble =  [repmat([-3 -3 -1 -1 1 1 3 3].',M/8,1) zeros(M,1)];
-
     %---- Channel settings ----%
     % noise settings
     noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
-    SNR = 20; % SNR of the channel. ideal=0 to see the effects on channel
+    SNR = 10; % SNR of the channel. noisy=1 to see the effects on channel
 
     %rayleigh channel settings
     fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
     bw = 5e+6; % Transmission Bandwidth
-    max_doppler_shift = 10; %max. doppler shift in terms of hertz
-    channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
+    max_doppler_shift = 0; %max. doppler shift
+    channel_profiles = ['EPA', 'EVA', 'ETU']; % Valid channel profile selections
     profile ='EPA'; %Channel profile
-    [delay_a pow_a] = LTE_channels (profile,bw);
+    [delay_a, pow_a] = LTE_channels (profile,bw);
     ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
-    ch_resp.storeHistory = 1;
+    if max_doppler_shift>0
+        ch_resp.storeHistory = 1;
+    end
     ch_resp.storePathGains =1;
 
+    %---- Channel estimation settings ----%
+    % method
+    valid_methods = ['IAM', 'IAM4']; % 'POP' may be added later.
+    estimation_method = 'IAM';
+
+    % preamble
+    % IAM preambles 
+    preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+    % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
+    % preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+    % POP preambles
+    % preamble = [repmat([1 -1].',M/2,1) zeros(M,1)];
+    % IAM4 preambles
+    % preamble = [zeros(M,1) zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+    if strcmp(estimation_method,'IAM4')
+        preamble =[zeros(M,1) preamble];
+    end
+
+
     %---- Equalizer settings ----%
+
     eq_select = 2; % selection of equalizer type 1: one tap, 
     % 2: three tap w/ geometric interp, 3: three tap w/ linear interp
     % 4: no equalizer
@@ -200,6 +232,11 @@ else
         error('eq_select should be an integer in range [1 4].');
     end
 
+    if ~ismember(valid_methods,estimation_method)
+        estimation_method
+        error('estimation_method should be either IAM, IAM4 or POP.');
+    end
+
 end
 
 %% 3- Print the configuration and ask for confirmation from user
@@ -208,19 +245,24 @@ if is_simulation
     conf
 else
     if noisy
-        disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nnum_frames=%d, syms_per_frames=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=%d dB', K,M,num_symbols,modulation,num_bits,num_frames,syms_per_frame,fading,eq_select,SNR));
+        disp(sprintf('K=%d, M=%d, num_symbols=%d, num_bits=%d, %d-QAM,\nnum_frames=%d, syms_per_frame=%d,fading=%d, equalizer=%d,\nestimation=%s, profile=%s, max_doppler_shift=%d, SNR=%d dB', K,M,num_symbols,num_bits,modulation,num_frames,syms_per_frame,fading,eq_select,estimation_method,profile,max_doppler_shift,SNR));
     else
-        disp(sprintf('K=%d, M=%d, num_symbols=%d, %d-QAM, num_bits=%d,\nnum_frames=%d, syms_per_frames=%d,\nfading=%d, equalizer=%d, estimation=''POP'', SNR=Ideal', K,M,num_symbols,modulation,num_bits,num_frames,syms_per_frame,fading,eq_select));
+        disp(sprintf('K=%d, M=%d, num_symbols=%d, num_bits=%d, %d-QAM,\nnum_frames=%d, syms_per_frame=%d,fading=%d, equalizer=%d,\nestimation=%s, profile=%s, max_doppler_shift=%d, SNR=Ideal', K,M,num_symbols,num_bits,modulation,num_frames,syms_per_frame,fading,eq_select,estimation_method,profile,max_doppler_shift));
     end
 end
 
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
-disp(sprintf('Warning: All the BER/CONF files in current directory will be deleted!\n'))
-pause; 
-delete('BER*.mat');
-delete('CONF*.mat');
-conf.started = clock;
-save(sprintf('CONF%d-%d-%d-%d-%d.mat', conf.started(1:5)),'conf');
+
+if is_simulation
+    disp(sprintf('Warning: All the BER/CONF files in current directory will be deleted!\n'))
+    pause; 
+    delete('BER*.mat');
+    delete('CONF*.mat');
+    conf.started = clock;
+    save(sprintf('CONF%d-%d-%d-%d-%d.mat', conf.started(1:5)),'conf');
+else
+    pause;
+end
 
 
 

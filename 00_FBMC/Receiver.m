@@ -14,18 +14,25 @@
 % implemented as a vector reshape function.
 
 % the matrix that reshaped input samples would be stored in
-receiver_input = zeros(M,2*(K+num_symbols-1)); 
+receiver_input_1 = zeros(M,K+ceil(num_oqam_subsymbols/2)-1); 
+receiver_input_2 = zeros(M,K+floor(num_oqam_subsymbols/2)-1);
 
+% reshaping will be separated
 % reshaping (joint implementation of delay chain & downsamplers)
-for r=0:K+num_symbols-1-1
-%     y(1,1+r*M:M+r*M) = y(1,1+r*M:M+r*M)+ tx_poly_output(:,r+1).';
-%     y(1,1+M/2+r*M:M+M/2+r*M) = y(1,1+M/2+r*M:M+M/2+r*M) + tx_poly_output(:,r+K+1).';
-    receiver_input(:,r+1) = y_ch(1,1+r*M:M+r*M);
-    receiver_input(:,r+K+num_symbols) = y_ch(1,1+M/2+r*M:M+M/2+r*M);    
+% PPN1
+for r=0:K+ceil(num_oqam_subsymbols/2)-1-1
+    receiver_input_1(:,r+1) = y_ch(1,1+r*M:M+r*M);
 end
 
-rx_poly_output = zeros(M,2*(K+num_symbols-1+K-1)); %output of polyphase filters will be stored in this
-rx_fft_input = zeros(M,2*num_symbols);
+for r=0:K+floor(num_oqam_subsymbols/2)-1-1
+    receiver_input_2(:,r+1) = y_ch(1,1+M/2+r*M:M+M/2+r*M);
+end
+
+rx_poly_output_1 = zeros(M,K+ceil(num_oqam_subsymbols/2)-1+K-1); %output of PPN1 will be stored in this
+rx_poly_output_2 = zeros(M,K+floor(num_oqam_subsymbols/2)-1+K-1); %output of PPN2 will be stored in this
+
+jp_rx_poly_output = zeros(M,2*(K+num_symbols-1+K-1)); %output of polyphase filters will be stored in this
+jp_rx_fft_input = zeros(M,2*num_symbols);
 
 % polyphase filter coefficients for archive
 ppb = zeros(M,K);
@@ -33,21 +40,26 @@ ppb = zeros(M,K);
 % polyphase filters are applied
 for k=1:M
     b = h(M-k+1:M:lp+1); % related polyphase filter coefficients sieved
-    % b = a(M-i+1);
     % we use lp+1 b/c of the delay implemented in prototype filter design   
-    rx_poly_output(k,:) = [conv(receiver_input(k,1:(K+num_symbols-1)),b) ...
-        conv(receiver_input(k,(K+num_symbols):2*(K+num_symbols-1)),b)];
-%     rx_fft_input(k,:) = [rx_poly_output(k,K:K+num_symbols-1) ...
-%         rx_poly_output(k, 2*K+num_symbols-2+K:2*K+num_symbols-2+K+num_symbols-1)];
+    rx_poly_output_1(k,:) = conv(receiver_input_1(k,:),b);
+    rx_poly_output_2(k,:) = conv(receiver_input_2(k,:),b);
     ppb(k,:) = b;
 end
+
+% rearrangement
+len=K+ceil(num_oqam_subsymbols/2)-1+K-1+K+floor(num_oqam_subsymbols/2)-1+K-1;
+rx_fft_input = zeros(M,len);
+rx_fft_input(:,1:2:end)=rx_poly_output_1;
+rx_fft_input(:,2:2:end)=rx_poly_output_2;
 
 save('ppb.mat','ppb');
 
 % fft performed
-rx_fft_output=fft(rx_poly_output);
+rx_fft_output=fft(rx_fft_input);
+jp_rx_fft_output=fft(jp_rx_poly_output);
 
-rx_output = zeros(M,2*(num_symbols+K-1+K-1));
+rx_output = zeros(M,len);
+jp_rx_output = zeros(M,2*(num_symbols+K-1+K-1));
 
 % we convolve one sample with the entire filter. then at the receiver we
 % convolve it with another filter. After contributions from other
@@ -60,32 +72,13 @@ rx_output = zeros(M,2*(num_symbols+K-1+K-1));
 sumfactor = sum(conv(ppa(1,:),ppb(1,:)));
 
 for k=1:M
-    bb = [exp(-j*2*pi*(k-1)*(lp+1)/(2*M)) ((-1)^(k-1))*exp(-j*2*pi*(k-1)*(lp+1)/(2*M))];
-    
-    if lp==K*M-1 %special treatment due to extra delay inserted 
-        bb=[(-1)^((k-1)*K) (-1)^((k-1)*(K+1))];
-    end
-    
-    beta =[];
-    
-    for c = 1:(num_symbols+K-1+K-1)
-        beta = [beta bb];
-    end
-   
-    
+    beta = ((-1).^((k-1)*(1:len)))*((-1).^((k-1)*K));
+
     % ifft input is oqam_m on kth subchannel multiplied by beta multiplier
     % on that subchannel, in accordance with the order of the OQAM
     % subsymbol
     
-    
-    rx_output(k,1:2:end-1) =  rx_fft_output(k,1:(num_symbols+K-1+K-1));
-    rx_output(k,2:2:end) =  rx_fft_output(k,(num_symbols+K-1+K-1)+1:2*(num_symbols+K-1+K-1));
-    
-    rx_output(k,:) = rx_output(k,:).*beta;
-    
-%     rx_output(k,:) = [];(1/sumfactor)*[sum(rx_fft_output(k,1:2*K-1)) ...
-%         sum(rx_fft_output(k,2*K:2*(2*K-1)))].*beta; %(1/sumfactor)*
-    
+    rx_output(k,:) = rx_fft_output(k,:).*beta;
 end
 
 % rx_output will be sent to subchannel processing block

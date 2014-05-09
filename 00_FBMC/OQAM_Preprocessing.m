@@ -29,15 +29,20 @@ for k=1:M
     oqam_m(k,:) = (real_parts+imag_parts).*theta; 
 end
 
+jp = zeros(size(oqam_m));
+
 % preamble insertion
 for i=num_frames:-1:1
     oqam_m = [oqam_m(:,1:2*(i-1)*syms_per_frame) preamble oqam_m(:,2*(i-1)*syms_per_frame+1:end)];
+    jp = [jp(:,1:2*(i-1)*syms_per_frame) preamble jp(:,2*(i-1)*syms_per_frame+1:end)];
 end
 % 
 % %%!!!!!!!!!!!!!!!!hack!!!!!!!!!!!!!!!!!!!!!!!!!!
-num_symbols = num_symbols+num_frames; %num_frames= no of preamble
+%num_symbols = num_symbols+num_frames*2; %num_frames= no of preambles
+% num_oqam_subsymbols = 2*num_symbols+3*num_frames; %num_frames= no of preambles
+num_oqam_subsymbols = size(oqam_m,2);
+%in this file all the computation will depend on num_oqam_subsymbols.
+
 % %soru: is preamble oqam modulated or to be modulated???????????????
 % %ans: the preamble takes 3 subsymbol duration with given setup. that
 % %indicates that the preamble will be appended to the oqam modulated data
-% %diger cvp: D3.1'de oyle demiyor ama
-
