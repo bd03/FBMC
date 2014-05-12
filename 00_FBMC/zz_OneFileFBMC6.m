@@ -560,10 +560,11 @@ if ~use_matlab_channel
     %MSE
     for i=1:num_frames
         i
-        NMSEr=(norm(fft_y.'-ch_resp_est(:,i)).^2)./(norm(fft_y.').^2);
-        NMSRrDB = 10*log10(NMSEr)
+        NMSE=(norm(fft_y.'-ch_resp_est(:,i)).^2)./(norm(fft_y.').^2);
+        NMSE_Db = 10*log10(NMSEr)
+        
         MSE=mean((abs(ch_resp_est(:,1)-fft_y.')).^2)
-        MSEDb=10*log10(mean((abs(ch_resp_est(:,1)-fft_y.')).^2))
+        MSE_Db=10*log10(mean((abs(ch_resp_est(:,1)-fft_y.')).^2))
     end
     
     %plots
