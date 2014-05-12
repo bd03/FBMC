@@ -15,11 +15,16 @@
 % channel impulse response
 
 if fading
-    y_response = filter(ch_resp,ones(size(y)));
-    y_filtered = filter(ch_resp,y);
-    y_filtered2 = y_response.*y;
-%     y_filtered = y_filtered2;
-    y_filtered3 = conv(y_response,y);
+    if use_matlab_channel
+%         y_response = filter(ch_resp,ones(size(y)));
+        y_filtered = filter(ch_resp,y);
+%         y_filtered2 = y_response.*y;
+    %     y_filtered = y_filtered2;
+%         y_filtered3 = conv(y_response,y);
+    else
+        y_conv = conv(ch_resp,y);
+        y_filtered = y_conv(length(ch_resp):length(ch_resp)+length(y)-1);  
+    end    
 else
     y_filtered = y;%filter(1,1,y);
 end

@@ -30,7 +30,7 @@ betas = zeros(M,num_oqam_subsymbols);
 
 for k=1:M
     
-    beta = ((-1).^((k-1)*(1:num_oqam_subsymbols)))*((-1).^((k-1)*K));
+    beta = ((-1).^((k-1)*(1:num_oqam_subsymbols)))*((-1).^((k-1)*K)); %special treatment for prototype filters of length KM-1
     
     betas(k,:)=beta;
     

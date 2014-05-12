@@ -1,6 +1,6 @@
                    
-function [ci_imp_out] = LTE_channels (type,bandwidth)
-% function [delay_a pow_a] = LTE_channels (type,bandwidth)
+% function [ci_imp_out] = LTE_channels (type,bandwidth)
+function [delay_a pow_a] = LTE_channels2 (type,bandwidth)
 %LTE channels
 
 
@@ -28,14 +28,14 @@ else
     error('Invalid channel profile selection');
 end
 
-
-pow_a_lin = 10.^(pow_a./10);
 % 
-% %Making the sampled channel
-tss = 1./bandw;
-pos_a = round(delay_a./tss);
-c_imp_sampled = [];
-for i = min(pos_a):max(pos_a)
-  c_imp_sampled(i+1) = sum(pow_a_lin(pos_a==i));
-end
-  ci_imp_out = sqrt((c_imp_sampled.^2./sum(c_imp_sampled.^2)));
+% pow_a_lin = 10.^(pow_a./10);
+% % 
+% % %Making the sampled channel
+% tss = 1./bandw;
+% pos_a = round(delay_a./tss);
+% c_imp_sampled = [];
+% for i = min(pos_a):max(pos_a)
+%   c_imp_sampled(i+1) = sum(pow_a_lin(pos_a==i));
+% end
+%   ci_imp_out = sqrt((c_imp_sampled.^2./sum(c_imp_sampled.^2)));

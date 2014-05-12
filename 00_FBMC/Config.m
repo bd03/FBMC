@@ -47,15 +47,21 @@ if is_simulation
     % rayleigh channel settings
     fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
     bw = 5e+6; % Transmission Bandwidth
-    max_doppler_shift = 0; %max. doppler shift in terms of hertz
+    max_doppler_shift = 1; %max. doppler shift in terms of hertz
     channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
-    profile ='EPA'; %Channel profile
-    [delay_a, pow_a] = LTE_channels (profile,bw);
-    ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
-    if max_doppler_shift>0
-        ch_resp.storeHistory = 1;
+    profile ='EVA'; %Channel profile
+    use_matlab_channel = 1;
+    if use_matlab_channel
+%         [delay_a, pow_a] = LTE_channels2 (profile,bw);
+%         ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
+        ch_resp = stdchan(1/bw,max_doppler_shift,'itur3GVAx'); % veh a
+        if max_doppler_shift>0
+            ch_resp.storeHistory = 1;
+        end
+        ch_resp.storePathGains =1;
+    else
+        ch_resp = LTE_channels (profile,bw);
     end
-    ch_resp.storePathGains =1;
     
     %---- Channel estimation settings ----%
     % method
@@ -71,14 +77,14 @@ if is_simulation
     % 4: no equalizer
     
     %---- Simulation settings ----%
-    num_frames = 20; % number of data frames in each FBMC block
-    syms_per_frame = 10; %number of symbols per FBMC frame
+    num_frames = 10; % number of data frames in each FBMC block
+    syms_per_frame = 50; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
-    num_trials = 1; % number of trials desired
+    num_trials = 20; % number of trials desired
     
-    M_arr=2.^(7:9); % array of M's that will be used in the simulation
+    M_arr=2.^(9); % array of M's that will be used in the simulation
     q_arr=[4]; % array of QAM modes that will be used in sim.
-    s_arr=10:13; % array of SNR values that will be used in the simulation
+    s_arr=0:2:30; % array of SNR values that will be used in the simulation
         
     %---- Parameter check ----%
     if K>4 || K<2
@@ -143,7 +149,7 @@ else
     % 2.b Main mode parameters
     %---- General filterbank parameters ----%
     K = 4; % overlapping factor 
-    M = 256; % number of subcarriers
+    M = 1024; % number of subcarriers
     num_frames = 10; % number of data frames in each FBMC block
     syms_per_frame = 10; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
@@ -170,15 +176,21 @@ else
     %rayleigh channel settings
     fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
     bw = 5e+6; % Transmission Bandwidth
-    max_doppler_shift = 0; %max. doppler shift
+    max_doppler_shift = 1; %max. doppler shift
     channel_profiles = ['EPA', 'EVA', 'ETU']; % Valid channel profile selections
     profile ='EPA'; %Channel profile
-    [delay_a, pow_a] = LTE_channels (profile,bw);
-    ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
-    if max_doppler_shift>0
-        ch_resp.storeHistory = 1;
+    use_matlab_channel = 1;
+    if use_matlab_channel
+        [delay_a, pow_a] = LTE_channels2 (profile,bw);
+%         ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
+        ch_resp = stdchan(1/bw,max_doppler_shift,'itur3GVAx'); % veh a
+        if max_doppler_shift>0
+            ch_resp.storeHistory = 1;
+        end
+        ch_resp.storePathGains =1;
+    else
+        ch_resp = LTE_channels (profile,bw);
     end
-    ch_resp.storePathGains =1;
 
     %---- Channel estimation settings ----%
     % method
@@ -190,6 +202,7 @@ else
     preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
     % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
     % preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+%     preamble = [zeros(M,1) repmat([3 3 3*j 3*j -3*j -3*j -3 -3].',M/8,1) zeros(M,1)];
     % POP preambles
     % preamble = [repmat([1 -1].',M/2,1) zeros(M,1)];
     % IAM4 preambles
@@ -245,9 +258,9 @@ if is_simulation
     conf
 else
     if noisy
-        disp(sprintf('K=%d, M=%d, num_symbols=%d, num_bits=%d, %d-QAM,\nnum_frames=%d, syms_per_frame=%d,fading=%d, equalizer=%d,\nestimation=%s, profile=%s, max_doppler_shift=%d, SNR=%d dB', K,M,num_symbols,num_bits,modulation,num_frames,syms_per_frame,fading,eq_select,estimation_method,profile,max_doppler_shift,SNR));
+        disp(sprintf('K=%d, M=%d, num_symbols=%d, num_bits=%d, %d-QAM,\nnum_frames=%d, syms_per_frame=%d,fading=%d, equalizer=%d,\nestimation=%s, profile=%s, max_doppler_shift=%d, SNR=%d dB\nuse_matlab_channel=%d', K,M,num_symbols,num_bits,modulation,num_frames,syms_per_frame,fading,eq_select,estimation_method,profile,max_doppler_shift,SNR,use_matlab_channel));
     else
-        disp(sprintf('K=%d, M=%d, num_symbols=%d, num_bits=%d, %d-QAM,\nnum_frames=%d, syms_per_frame=%d,fading=%d, equalizer=%d,\nestimation=%s, profile=%s, max_doppler_shift=%d, SNR=Ideal', K,M,num_symbols,num_bits,modulation,num_frames,syms_per_frame,fading,eq_select,estimation_method,profile,max_doppler_shift));
+        disp(sprintf('K=%d, M=%d, num_symbols=%d, num_bits=%d, %d-QAM,\nnum_frames=%d, syms_per_frame=%d,fading=%d, equalizer=%d,\nestimation=%s, profile=%s, max_doppler_shift=%d, SNR=Ideal\nuse_matlab_channel=%d', K,M,num_symbols,num_bits,modulation,num_frames,syms_per_frame,fading,eq_select,estimation_method,profile,max_doppler_shift,use_matlab_channel));
     end
 end
 

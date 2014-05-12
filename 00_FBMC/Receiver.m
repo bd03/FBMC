@@ -72,7 +72,7 @@ jp_rx_output = zeros(M,2*(num_symbols+K-1+K-1));
 sumfactor = sum(conv(ppa(1,:),ppb(1,:)));
 
 for k=1:M
-    beta = ((-1).^((k-1)*(1:len)))*((-1).^((k-1)*K));
+    beta = ((-1).^((k-1)*(1:len)))*((-1).^((k-1)*K)); %special treatment for prototype filters of length KM-1
 
     % ifft input is oqam_m on kth subchannel multiplied by beta multiplier
     % on that subchannel, in accordance with the order of the OQAM

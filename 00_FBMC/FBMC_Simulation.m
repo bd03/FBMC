@@ -39,7 +39,9 @@ for M=M_arr
     num_samples = M; %number of samples in a vector
     
     % IAM preambles 
-    preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+%     preamble = [zeros(M,1) repmat([10 10 -10 -10].',M/4,1) zeros(M,1)];
+%     preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+    preamble = [zeros(M,1) repmat([1+j 1+j -1-j -1-j].',M/4,1) zeros(M,1)];
     % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
     % preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
     % POP preambles
