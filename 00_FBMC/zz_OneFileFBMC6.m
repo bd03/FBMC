@@ -2,14 +2,13 @@
 %
 % Burak Dayi
 
-% Experimentol on MSE & Channel estimation
+% Experimental on MSE & Channel estimation
 % Sending multiple frames with preambles of three oqam symbols.
 
 % The collection of three estimation methods implemented in
 % OneFileFBMC2-3 & 4
 
-%
-% Created: 08-05-2014
+% Created: 11-05-2014
 
 %close all
 clear all
@@ -22,9 +21,9 @@ fprintf('--------------\n-----FBMC-----\n--------------\n\n');
 % 2.b Main mode parameters
 %---- General filterbank parameters ----%
 K = 4; % overlapping factor 
-M = 1024; % number of subcarriers
-num_frames = 5; % number of data frames in each FBMC block
-syms_per_frame = 40; %number of symbols per FBMC frame
+M = 256; % number of subcarriers
+num_frames = 10; % number of data frames in each FBMC block
+syms_per_frame = 10; %number of symbols per FBMC frame
 num_symbols = num_frames*syms_per_frame; % total number of data symbols
 num_samples = M; %number of samples in a vector
 modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
@@ -47,12 +46,12 @@ noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
 SNR = 10; % SNR of the channel. noisy=1 to see the effects on channel
 
 %rayleigh channel settings
-fading = 0; % set 0 for distortionless channel, set 1 for rayleigh channel
+fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
 bw = 5e+6; % Transmission Bandwidth
 max_doppler_shift= 1; %max. doppler shift
 channel_profiles = ['EPA', 'EVA', 'ETU']; % Valid channel profile selections
 profile ='ETU'; %Channel profile
-use_matlab_channel = 1;
+use_matlab_channel = 0;
 if use_matlab_channel
     [delay_a, pow_a] = LTE_channels2(profile,bw);
 %     ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
@@ -73,7 +72,8 @@ estimation_method = 'IAM';
 
 % preamble
 % IAM preambles 
-preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+% preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
 % preamble = [zeros(M,1) repmat([10 10 -10 -10].',M/4,1) zeros(M,1)];
 % preamble = [zeros(M,1) repmat([1+j 1+j -1-j -1-j].',M/4,1) zeros(M,1)];
 % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
@@ -86,7 +86,6 @@ preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
 if strcmp(estimation_method,'IAM4')
     preamble =[zeros(M,1) preamble];
 end
-
 
 %---- Equalizer settings ----%
 
@@ -260,8 +259,10 @@ if fading
     %     y_filtered = y_filtered2;
 %         y_filtered3 = conv(y_response,y);
     else
-        y_conv = conv(ch_resp,y);
-        y_filtered = y_conv(length(ch_resp):length(ch_resp)+length(y)-1);  
+%         y_conv = conv(y,ch_resp);
+        y_filtered = filter(ch_resp,1,y);
+%         y_filtered = y_conv(length(ch_resp):length(ch_resp)+length(y)-1); 
+%         y_filtered = y_conv(1:length(y));
     end  
 else
     y_filtered = y;%filter(1,1,y);
@@ -360,7 +361,8 @@ if strcmp(estimation_method,'IAM')
     
     % estimation of channel
     for i=1:num_frames
-        ch_resp_est(:,i) = real(scp_preamble(:,i))./(preamble(:,2)*sumfactor);%*sumfactor);
+%         ch_resp_est(:,i) = real(scp_preamble(:,i))./(preamble(:,2)*sumfactor);%*sumfactor);
+        ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,2)*sumfactor);%*sumfactor);
     end
 
     if eq_select == 1
@@ -550,29 +552,34 @@ end
 
 if ~use_matlab_channel
     % calculate MSE, if we use LTE channels
-    pse_delta=zeros(1,M);
-    pse_delta(1)=1;
-    pse_delta_resp=conv(ch_resp,pse_delta);
-    fft_y=fft(pse_delta_resp,M); % fft of impulse response
+%     pse_delta=zeros(1,M);
+%     pse_delta(1)=1;
+%     pse_delta_resp=conv(ch_resp,pse_delta);
+    fft_y=fft(ch_resp,M); % fft of impulse response
         
     %MSE
     for i=1:num_frames
         i
         NMSEr=(norm(fft_y.'-ch_resp_est(:,i)).^2)./(norm(fft_y.').^2);
-        NMSRrDB = 20*log10(NMSEr)
+        NMSRrDB = 10*log10(NMSEr)
+        MSE=mean((abs(ch_resp_est(:,1)-fft_y.')).^2)
+        MSEDb=10*log10(mean((abs(ch_resp_est(:,1)-fft_y.')).^2))
     end
     
+    %plots
     figure;
     plot(abs(fft_y));
-    figure;
-    plot(abs(real(ch_resp_est(:,1))));
-    %plots
+    hold on
+    plot(abs(ch_resp_est(:,1)),'r');
+    % plot(abs(ch_resp_est(:,2)),'g.-');
+    % plot(abs(ch_resp_est(:,3)),'b.-');
     
     figure;
     scatter(real(reshape(qam_est,num_symbols*M,1)),imag(reshape(qam_est,num_symbols*M,1)))
 else
     figure;
     plot(20*log10(abs(ch_resp_est(:,1))));
+    plot(ch_resp);
 end
 
 
