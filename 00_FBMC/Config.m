@@ -47,10 +47,10 @@ if is_simulation
     % rayleigh channel settings
     fading = 1; % set 0 for distortionless channel, set 1 for rayleigh channel
     bw = 5e+6; % Transmission Bandwidth
-    max_doppler_shift = 1; %max. doppler shift in terms of hertz
+    max_doppler_shift = .0000001; %max. doppler shift in terms of hertz
     channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
     profile ='EVA'; %Channel profile
-    use_matlab_channel = 1;
+    use_matlab_channel = 0;
     if use_matlab_channel
 %         [delay_a, pow_a] = LTE_channels2 (profile,bw);
 %         ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
@@ -68,8 +68,7 @@ if is_simulation
     valid_methods = ['IAM', 'IAM4']; % 'POP' may be added later.
     estimation_method = 'IAM';
 
-    % preamble
-    
+    % preamble will be defined during the simulation    
     
     %---- Equalizer settings ----%
     eq_select = 2; % selection of equalizer type 1: one tap, 
@@ -80,11 +79,11 @@ if is_simulation
     num_frames = 10; % number of data frames in each FBMC block
     syms_per_frame = 50; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
-    num_trials = 20; % number of trials desired
+    num_trials = 3; % number of trials desired
     
-    M_arr=2.^(9); % array of M's that will be used in the simulation
+    M_arr=2.^(8:9); % array of M's that will be used in the simulation
     q_arr=[4]; % array of QAM modes that will be used in sim.
-    s_arr=0:2:30; % array of SNR values that will be used in the simulation
+    s_arr=0:5:30; % array of SNR values that will be used in the simulation
         
     %---- Parameter check ----%
     if K>4 || K<2
@@ -120,6 +119,14 @@ if is_simulation
     %---- Initialization of data containers ----%
     % BER matrix that will store BER values
     BER=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    % NMSE & MSE matrices that will store those values
+    MSE_first=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_rest=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_all=zeros(length(M_array),length(qam_sizes),length(s_arr));
+
+    MSE_first_db_arr=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_rest_db_arr=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_all_db_arr=zeros(length(M_array),length(qam_sizes),length(s_arr));
     % CONF file that will store configuration of the simulation parameters
     c1 = clock; % time stamp
     conf=struct('M_val',M_arr,...
@@ -141,7 +148,7 @@ if is_simulation
         'ch_profile', profile,...
         'estimation_method',estimation_method,...
         'explanation','Blank',...
-        'version', 4);
+        'version', 5);
     save(sprintf('CONF%d-%d-%d-%d-%d.mat', c1(1:5)),'conf');
     
 else
@@ -211,13 +218,10 @@ else
         preamble =[zeros(M,1) preamble];
     end
 
-
     %---- Equalizer settings ----%
-
     eq_select = 2; % selection of equalizer type 1: one tap, 
     % 2: three tap w/ geometric interp, 3: three tap w/ linear interp
     % 4: no equalizer
-
 
     %---- Parameter check ---%
     if K>4 || K<2
@@ -267,7 +271,7 @@ end
 disp(sprintf('Press any key to proceed. \nIf you want to change configuration, please abort the script by pressing CTRL+C.'))
 
 if is_simulation
-    disp(sprintf('Warning: All the BER/CONF files in current directory will be deleted!\n'))
+    disp(sprintf('Warning: All the BER/CONF/MSE files in current directory will be deleted!\n'))
     pause; 
     delete('BER*.mat');
     delete('CONF*.mat');

@@ -39,11 +39,9 @@ for M=M_arr
     num_samples = M; %number of samples in a vector
     
     % IAM preambles 
-%     preamble = [zeros(M,1) repmat([10 10 -10 -10].',M/4,1) zeros(M,1)];
 %     preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
-    preamble = [zeros(M,1) repmat([1+j 1+j -1-j -1-j].',M/4,1) zeros(M,1)];
     % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
-    % preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+    preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
     % POP preambles
     % preamble = [repmat([1 -1].',M/2,1) zeros(M,1)];
     % IAM4 preambles
@@ -52,9 +50,23 @@ for M=M_arr
         preamble =[zeros(M,1) preamble];
     end 
     
+    conf.preamble=preamble;
+    c1=clock;
+    save(sprintf('CONF%d-%d-%d-%d-%d.mat', c1(1:5)),'conf');
+    
+    %Prototype filter
     Prototype_filter;
-    %disp('+Prototype filter is designed.');
+
     for modulation=q_arr
+        if modulation == 16
+            preamble = 3*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+        elseif modulation == 64
+            preamble = 5*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+        elseif modulation ==256
+            preamble = 7*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+        else
+            preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+        end
         bits_per_sample = log2(modulation); %num of bits carried by one sample
         num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
         for SNR=s_arr

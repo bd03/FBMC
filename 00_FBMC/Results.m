@@ -20,13 +20,40 @@ bit_err = abs(bits-bits_est);
 % dif_m = [m m_est];
 [error4,rate] = symerr(bits,bits_est);
 
+if ~use_matlab_channel
+    % calculate MSE, if we use LTE channels
+    fft_y=fft(ch_resp,M); % fft of impulse response
+    
+    %MSE
+    for i=1:num_frames
+%         i
+%         MSE(i)=(norm(fft_y.'-ch_resp_est(:,i)).^2)./(norm(fft_y.').^2);
+%         NMSE_Db = 10*log10(NMSE);
+        
+        MSE(i)=mean((abs(ch_resp_est(:,i)-fft_y.')).^2);
+%         MSE_Db=10*log10(MSE);
+    end
+end
+
 if is_simulation
     M_x= find(M_array==M);
     mod_x = find(qam_sizes==modulation);
     snr_x = find(s_arr==SNR);
     BER(M_x, mod_x, snr_x) = BER(M_x, mod_x, snr_x)+rate/num_trials;
+    %MSE
+    MSE_first(M_x, mod_x, snr_x) = MSE_first(M_x, mod_x, snr_x)+MSE(1)/num_trials;
+    MSE_rest(M_x, mod_x, snr_x) = MSE_rest(M_x, mod_x, snr_x)+sum(MSE(2:end))/((num_frames-1)*num_trials);
+    MSE_all(M_x, mod_x, snr_x) = MSE_all(M_x, mod_x, snr_x)+sum(MSE)/(num_frames*num_trials);
     if tt==num_trials
-        disp(sprintf('BER = %f', BER(M_x, mod_x, snr_x)));
+        MSE_first_db = 10*log10(MSE_first(M_x, mod_x, snr_x));
+        MSE_rest_db = 10*log10(MSE_rest(M_x, mod_x, snr_x));
+        MSE_all_db = 10*log10(MSE_all(M_x, mod_x, snr_x));
+        
+        MSE_first_db_arr(M_x, mod_x, snr_x) = MSE_first_db;
+        MSE_rest_db_arr(M_x, mod_x, snr_x) = MSE_rest_db;
+        MSE_all_db_arr(M_x, mod_x, snr_x) = MSE_all_db;
+        
+        disp(sprintf('BER = %f, MSE_first=%f dB, MSE_rest=%f dB, MSE_all=%f dB', BER(M_x, mod_x, snr_x), MSE_first_db, MSE_rest_db, MSE_all_db));
         c=clock;
         delete('BER*.mat');
         try
@@ -35,6 +62,20 @@ if is_simulation
         catch err
             warning('BER of last iteration could not be saved.\n Do not worry, next iteration will already cover everthing.')
         end
+        
+        delete('MSE*.mat');
+        try
+            save(sprintf('MSE_first%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_first');
+            save(sprintf('MSE_rest%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_rest');
+            save(sprintf('MSE_all%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_all');
+
+            save(sprintf('MSE_first_db_arr%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_first_db_arr');
+            save(sprintf('MSE_rest_db_arr%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_rest_db_arr');
+            save(sprintf('MSE_all_db_arr%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_all_db_arr');
+        catch err
+            warning('mse file');
+        end
+        
         try
             a=ls('CONF2*');
             if ~strcmp(version('-release'),'2013b')
@@ -48,7 +89,7 @@ if is_simulation
         end
     end
 else
-    
+    % main mode
     disp(sprintf('Number of errorneous samples: %d/%d', error1,num_symbols*M))
     disp(sprintf('SER: %f', rate2));
     %     disp(sprintf('Number of errors qam_dif: %d', error2))
