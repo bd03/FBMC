@@ -22,7 +22,7 @@ function varargout = showplot(varargin)
 
 % Edit the above text to modify the response to help showplot
 
-% Last Modified by GUIDE v2.5 15-Apr-2014 17:38:59
+% Last Modified by GUIDE v2.5 13-May-2014 14:56:19
 
 % Created: 19-03-2014
 
@@ -57,7 +57,7 @@ function showplot_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % obtain BER file
-[fname, pname] = uigetfile({'BER*.mat'},'Choose BER file');
+[fname, pname] = uigetfile({'BER*.mat' 'MSE*.mat'},'Choose BER file');
 
 if fname
     try
@@ -534,3 +534,14 @@ update_plot(handles)
 
 
 
+
+
+% --------------------------------------------------------------------
+function uipushtool4_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to uipushtool4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+figu=handles.figure1;
+% c1=clock;
+name=get(handles.figure1,'Name');
+savefig(figu,name(1:end-4));
