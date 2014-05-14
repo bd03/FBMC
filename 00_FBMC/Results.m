@@ -41,17 +41,17 @@ if is_simulation
     snr_x = find(s_arr==SNR);
     BER(M_x, mod_x, snr_x) = BER(M_x, mod_x, snr_x)+rate/num_trials;
     %MSE
-    MSE_first(M_x, mod_x, snr_x) = MSE_first(M_x, mod_x, snr_x)+MSE(1)/num_trials;
-    MSE_rest(M_x, mod_x, snr_x) = MSE_rest(M_x, mod_x, snr_x)+sum(MSE(2:end))/((num_frames-1)*num_trials);
-    MSE_all(M_x, mod_x, snr_x) = MSE_all(M_x, mod_x, snr_x)+sum(MSE)/(num_frames*num_trials);
+    MSE_f(M_x, mod_x, snr_x) = MSE_f(M_x, mod_x, snr_x)+MSE(1)/num_trials;
+    MSE_r(M_x, mod_x, snr_x) = MSE_r(M_x, mod_x, snr_x)+sum(MSE(2:end))/((num_frames-1)*num_trials);
+    MSE_a(M_x, mod_x, snr_x) = MSE_a(M_x, mod_x, snr_x)+sum(MSE)/(num_frames*num_trials);
     if tt==num_trials
-        MSE_first_db = 10*log10(MSE_first(M_x, mod_x, snr_x));
-        MSE_rest_db = 10*log10(MSE_rest(M_x, mod_x, snr_x));
-        MSE_all_db = 10*log10(MSE_all(M_x, mod_x, snr_x));
+        MSE_first_db = 10*log10(MSE_f(M_x, mod_x, snr_x));
+        MSE_rest_db = 10*log10(MSE_r(M_x, mod_x, snr_x));
+        MSE_all_db = 10*log10(MSE_a(M_x, mod_x, snr_x));
         
-        MSE_first_db_arr(M_x, mod_x, snr_x) = MSE_first_db;
-        MSE_rest_db_arr(M_x, mod_x, snr_x) = MSE_rest_db;
-        MSE_all_db_arr(M_x, mod_x, snr_x) = MSE_all_db;
+        MSE_db_f(M_x, mod_x, snr_x) = MSE_first_db;
+        MSE_db_r(M_x, mod_x, snr_x) = MSE_rest_db;
+        MSE_db_a(M_x, mod_x, snr_x) = MSE_all_db;
         
         disp(sprintf('BER = %f, MSE_first=%f dB, MSE_rest=%f dB, MSE_all=%f dB', BER(M_x, mod_x, snr_x), MSE_first_db, MSE_rest_db, MSE_all_db));
         c=clock;
@@ -65,13 +65,13 @@ if is_simulation
         
         delete('MSE*.mat');
         try
-            save(sprintf('MSE_first%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_first');
-            save(sprintf('MSE_rest%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_rest');
-            save(sprintf('MSE_all%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_all');
+            save(sprintf('MSE_f%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_f');
+            save(sprintf('MSE_r%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_r');
+            save(sprintf('MSE_a%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_a');
 
-            save(sprintf('MSE_first_db_arr%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_first_db_arr');
-            save(sprintf('MSE_rest_db_arr%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_rest_db_arr');
-            save(sprintf('MSE_all_db_arr%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_all_db_arr');
+            save(sprintf('MSE_db_f%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_db_f');
+            save(sprintf('MSE_db_r%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_db_r');
+            save(sprintf('MSE_db_a%d-%d-%d-%d-%d.mat', c(1:5)),'MSE_db_a');
         catch err
             warning('mse file');
         end

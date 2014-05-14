@@ -106,6 +106,21 @@ end
 c2=clock;
 delete('BER*.mat');
 save(sprintf('BER%d-%d-%d-%d-%d-Final.mat', c2(1:5)),'BER');
+
+delete('MSE*.mat');
+try
+    save(sprintf('MSE_f%d-%d-%d-%d-%d-Final.mat', c(1:5)),'MSE_f');
+    save(sprintf('MSE_r%d-%d-%d-%d-%d-Final.mat', c(1:5)),'MSE_r');
+    save(sprintf('MSE_a%d-%d-%d-%d-%d-Final.mat', c(1:5)),'MSE_a');
+
+    save(sprintf('MSE_db_f%d-%d-%d-%d-%d-Final.mat', c(1:5)),'MSE_db_f');
+    save(sprintf('MSE_db_r%d-%d-%d-%d-%d-Final.mat', c(1:5)),'MSE_db_r');
+    save(sprintf('MSE_db_a%d-%d-%d-%d-%d-Final.mat', c(1:5)),'MSE_db_a');
+catch err
+    warning('mse file');
+end
+
+
 try
     a=ls('CONF2*');
     if ~strcmp(version('-release'),'2013b')

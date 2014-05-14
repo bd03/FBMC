@@ -57,46 +57,149 @@ function showplot_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % obtain BER file
-[fname, pname] = uigetfile({'BER*.mat' 'MSE*.mat'},'Choose BER file');
+[fname, pname] = uigetfile({['BER*.mat;MSE*.mat']},'Choose BER/MSE file');
 
 if fname
-    try
-        load(strcat(pname, fname));
-    catch
-        error('BER data could not be loaded.')
-    end
-    try
-    load(strcat(pname,'CONF',fname(4:length(fname))));
-    catch
-        error('CONF data could not be found.')
-    end
-else
-    warning('A BER file should be selected');
-    [fname, pname] = uigetfile({'BER*.mat'},'Choose BER file');
-    
-    if ~fname
-        error('Could not reach a BER file');
-    else
+    if strcmp(fname(1:3),'BER')
         try
             load(strcat(pname, fname));
         catch
             error('BER data could not be loaded.')
         end
         try
-            load(strcat(pname,'CONF',fname(4:length(fname))));
+        load(strcat(pname,'CONF',fname(4:length(fname))));
         catch
             error('CONF data could not be found.')
+        end
+        handles.file='BER';
+        handles.BER = BER;
+    elseif strcmp(fname(1:6),'MSE_db')
+        try
+            load(strcat(pname, fname));
+        catch
+            error('MSE data could not be loaded.')
+        end
+        try
+            load(strcat(pname,'CONF',fname(9:length(fname))));
+        catch
+            error('CONF data could not be found.')
+        end
+        handles.file=fname(1:8);
+        if strcmp(handles.file,'MSE_db_a')
+            handles.MSE_db = MSE_db_a; 
+        elseif strcmp(handles.file,'MSE_db_f')
+            handles.MSE_db = MSE_db_f; 
+        elseif strcmp(handles.file,'MSE_db_r')
+            handles.MSE_db = MSE_db_r; 
+        end
+    elseif strcmp(fname(1:3),'MSE')
+        %not implemented yet.
+    else
+        error('Invalid file.')
+    end
+else
+    warning('A BER/MSE file should be selected');
+    [fname, pname] = uigetfile({'BER*.mat;MSE*.mat'},'Choose BER file');
+    
+    if ~fname
+        error('Could not reach a BER/MSE file');
+    else
+        if strcmp(fname(1:3),'BER')
+            try
+                load(strcat(pname, fname));
+            catch
+                error('BER data could not be loaded.')
+            end
+            try
+                load(strcat(pname,'CONF',fname(4:length(fname))));
+            catch
+                error('CONF data could not be found.')
+            end
+            handles.file='BER';
+            handles.BER = BER;
+        elseif strcmp(fname(1:6),'MSE_db')
+            try
+                load(strcat(pname, fname));
+            catch
+                error('MSE data could not be loaded.')
+            end
+            try
+                load(strcat(pname,'CONF',fname(9:length(fname))));
+            catch
+                error('CONF data could not be found.')
+            end
+            handles.file=fname(1:8);
+            if strcmp(handles.file,'MSE_db_a')
+                handles.MSE_db = MSE_db_a; 
+            elseif strcmp(handles.file,'MSE_db_f')
+                handles.MSE_db = MSE_db_f; 
+            elseif strcmp(handles.file,'MSE_db_r')
+                handles.MSE_db = MSE_db_r; 
+            end
+        elseif strcmp(fname(1:3),'MSE')
+            %not implemented yet.
+        else
         end
     end
 end
 
-new_data_process(hObject,handles,BER,conf,fname);
+% new_data_process(hObject,handles,BER,conf,fname);
+new_data_process(hObject,handles,handles.file,conf,fname);
 
 
 
 % UIWAIT makes showplot wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
 
+% --------------------------------------------------------------------
+function uipushtool2_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to uipushtool2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% obtain BER file
+[fname, pname] = uigetfile({'BER*.mat;MSE*.mat'},'Choose BER file');
+
+if fname
+    if strcmp(fname(1:3),'BER')
+        try
+            load(strcat(pname, fname));
+        catch
+            error('BER data could not be loaded.')
+        end
+        try
+        load(strcat(pname,'CONF',fname(4:length(fname))));
+        catch
+            error('CONF data could not be found.')
+        end
+        handles.file='BER';
+        handles.BER = BER;
+    elseif strcmp(fname(1:6),'MSE_db')
+        try
+            load(strcat(pname, fname));
+        catch
+            error('MSE data could not be loaded.')
+        end
+        try
+            load(strcat(pname,'CONF',fname(9:length(fname))));
+        catch
+            error('CONF data could not be found.')
+        end
+        handles.file=fname(1:8);
+        if strcmp(handles.file,'MSE_db_a')
+            handles.MSE_db = MSE_db_a; 
+        elseif strcmp(handles.file,'MSE_db_f')
+            handles.MSE_db = MSE_db_f; 
+        elseif strcmp(handles.file,'MSE_db_r')
+            handles.MSE_db = MSE_db_r; 
+        end
+    elseif strcmp(fname(1:3),'MSE')
+        %not implemented yet.
+    else
+        error('Invalid file.')
+    end
+    
+    new_data_process(hObject,handles,handles.file,conf,fname);
+end
 
 % --- Outputs from this function are returned to the command line.
 function varargout = showplot_OutputFcn(hObject, eventdata, handles) 
@@ -347,6 +450,17 @@ function uipushtool3_ClickedCallback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 msgbox(strcat(evalc('handles.conf'),sprintf('\n'),evalc('handles.conf.resp'),sprintf('\nexplanation:\n'),handles.conf.explanation))
 
+% --------------------------------------------------------------------
+function uipushtool4_ClickedCallback(hObject, eventdata, handles)
+% hObject    handle to uipushtool4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+figu=handles.figure1;
+% c1=clock;
+name=get(handles.figure1,'Name');
+savefig(figu,name(1:end-4));
+
+
 function update_plot(handles)
 % toggle1: M=4
 % toggle13-19: M=8,16,32,64,128,256,512
@@ -392,52 +506,44 @@ end
 
 for qw=handles.conf(1).M_val
     for zx=handles.conf(1).mod_sch
-        if get(handles.handles_M(log2(qw)-1),'Value')==1 && get(handles.handles_mod(find(handles.all_mod==zx)),'Value')==1 && ...
-                strcmp(get(handles.handles_M(log2(qw)-1),'Enable'),'on') && strcmp(get(handles.handles_mod(find(handles.all_mod==zx)),'Enable'),'on') 
-%             handles.conf(1).SNR_val
-%             disp('annen')
-%             handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx))
-            modifier = strcat(lines(mod(log2(qw)-1-1,2)+1),colors(mod(log2(qw)-1,5)+1),markers(mod(find(handles.all_mod==zx)-1,5)+1));
-            semilogy(handles.conf(1).SNR_val,handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx),:),modifier,...
-                'LineWidth',1.5,'MarkerSize',8);
-            flag_at_least_one = true;
-            hold on
-            grid on
+        if strcmp(handles.file,'BER')
+            if get(handles.handles_M(log2(qw)-1),'Value')==1 && get(handles.handles_mod(find(handles.all_mod==zx)),'Value')==1 && ...
+                    strcmp(get(handles.handles_M(log2(qw)-1),'Enable'),'on') && strcmp(get(handles.handles_mod(find(handles.all_mod==zx)),'Enable'),'on') 
+    %             handles.conf(1).SNR_val
+    %             disp('annen')
+    %             handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx))
+                modifier = strcat(lines(mod(log2(qw)-1-1,2)+1),colors(mod(log2(qw)-1,5)+1),markers(mod(find(handles.all_mod==zx)-1,5)+1));
+                semilogy(handles.conf(1).SNR_val,handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx),:),modifier,...
+                    'LineWidth',1.5,'MarkerSize',8);
+                flag_at_least_one = true;
+                hold on
+                grid on
+            end
+            ylabel('BER');
+        else
+            if get(handles.handles_M(log2(qw)-1),'Value')==1 && get(handles.handles_mod(find(handles.all_mod==zx)),'Value')==1 && ...
+                    strcmp(get(handles.handles_M(log2(qw)-1),'Enable'),'on') && strcmp(get(handles.handles_mod(find(handles.all_mod==zx)),'Enable'),'on') 
+    %             handles.conf(1).SNR_val
+    %             disp('annen')
+    %             handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx))
+                modifier = strcat(lines(mod(log2(qw)-1-1,2)+1),colors(mod(log2(qw)-1,5)+1),markers(mod(find(handles.all_mod==zx)-1,5)+1));
+                plot(handles.conf(1).SNR_val,handles.data(length(handles.conf(1).mod_sch)*(find(handles.conf(1).M_val==qw)-1)+find(handles.conf(1).mod_sch==zx),:),modifier,...
+                    'LineWidth',1.5,'MarkerSize',8);
+                flag_at_least_one = true;
+                hold on
+                grid on
+            end
+            ylabel('NMSE');
         end
     end
 end
 xlabel('SNR (dB)');
-ylabel('BER');
 hold off
 if ~flag_at_least_one
     semilogy(1,1);
 end
 
-% --------------------------------------------------------------------
-function uipushtool2_ClickedCallback(hObject, eventdata, handles)
-% hObject    handle to uipushtool2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% obtain BER file
-[fname, pname] = uigetfile({'BER*.mat'},'Choose BER file');
-
-if fname
-    try
-        load(strcat(pname, fname));
-    catch
-        error('BER data could not be loaded.')
-    end
-    try
-        load(strcat(pname,'CONF',fname(4:length(fname))));
-    catch
-        error('CONF data could not be found.')
-    end
-    
-    new_data_process(hObject,handles,BER,conf,fname);
-end
-
-function new_data_process(hObject,handles,BER,conf,fname)
-handles.BER = BER;
+function new_data_process(hObject,handles,file,conf,fname)
 handles.conf = conf;
 
 %OFDM data retrieval
@@ -517,10 +623,17 @@ handles.data=zeros(length(handles.conf(1).M_val)*length(handles.conf(1).mod_sch)
 
 for qw=1:length(handles.conf(1).M_val)
     for zx=1:length(handles.conf(1).mod_sch)
-        handles.data(length(handles.conf(1).mod_sch)*(qw-1)+zx,:)=...
-            handles.BER(log2(handles.conf(1).M_val(qw))-1,...
-            find(handles.all_mod==handles.conf(1).mod_sch(zx)),...
-            1:length(handles.conf(1).SNR_val));
+        if strcmp(file,'BER')
+            handles.data(length(handles.conf(1).mod_sch)*(qw-1)+zx,:)=...
+                handles.BER(log2(handles.conf(1).M_val(qw))-1,...
+                find(handles.all_mod==handles.conf(1).mod_sch(zx)),...
+                1:length(handles.conf(1).SNR_val));
+        else
+            handles.data(length(handles.conf(1).mod_sch)*(qw-1)+zx,:)=...
+                handles.MSE_db(log2(handles.conf(1).M_val(qw))-1,...
+                find(handles.all_mod==handles.conf(1).mod_sch(zx)),...
+                1:length(handles.conf(1).SNR_val));
+        end
     end
 end
 
@@ -531,17 +644,3 @@ guidata(hObject, handles);
 pushbutton2_Callback(hObject, 0, handles)
 pushbutton4_Callback(hObject, 0, handles)
 update_plot(handles)
-
-
-
-
-
-% --------------------------------------------------------------------
-function uipushtool4_ClickedCallback(hObject, eventdata, handles)
-% hObject    handle to uipushtool4 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-figu=handles.figure1;
-% c1=clock;
-name=get(handles.figure1,'Name');
-savefig(figu,name(1:end-4));

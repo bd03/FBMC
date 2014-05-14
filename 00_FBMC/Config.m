@@ -49,7 +49,7 @@ if is_simulation
     bw = 5e+6; % Transmission Bandwidth
     max_doppler_shift = .0000001; %max. doppler shift in terms of hertz
     channel_profiles = ['EPA' 'EVA' 'ETU']; % Valid channel profile selections
-    profile ='EVA'; %Channel profile
+    profile ='EPA'; %Channel profile
     use_matlab_channel = 0;
     if use_matlab_channel
 %         [delay_a, pow_a] = LTE_channels2 (profile,bw);
@@ -79,11 +79,11 @@ if is_simulation
     num_frames = 10; % number of data frames in each FBMC block
     syms_per_frame = 50; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
-    num_trials = 3; % number of trials desired
+    num_trials = 1; % number of trials desired
     
-    M_arr=2.^(8:9); % array of M's that will be used in the simulation
-    q_arr=[4]; % array of QAM modes that will be used in sim.
-    s_arr=0:5:30; % array of SNR values that will be used in the simulation
+    M_arr=2.^(9:10); % array of M's that will be used in the simulation
+    q_arr=[4 16 64]; % array of QAM modes that will be used in sim.
+    s_arr=0:1:30; % array of SNR values that will be used in the simulation
         
     %---- Parameter check ----%
     if K>4 || K<2
@@ -120,13 +120,13 @@ if is_simulation
     % BER matrix that will store BER values
     BER=zeros(length(M_array),length(qam_sizes),length(s_arr));
     % NMSE & MSE matrices that will store those values
-    MSE_first=zeros(length(M_array),length(qam_sizes),length(s_arr));
-    MSE_rest=zeros(length(M_array),length(qam_sizes),length(s_arr));
-    MSE_all=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_f=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_r=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_a=zeros(length(M_array),length(qam_sizes),length(s_arr));
 
-    MSE_first_db_arr=zeros(length(M_array),length(qam_sizes),length(s_arr));
-    MSE_rest_db_arr=zeros(length(M_array),length(qam_sizes),length(s_arr));
-    MSE_all_db_arr=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_db_f=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_db_r=zeros(length(M_array),length(qam_sizes),length(s_arr));
+    MSE_db_a=zeros(length(M_array),length(qam_sizes),length(s_arr));
     % CONF file that will store configuration of the simulation parameters
     c1 = clock; % time stamp
     conf=struct('M_val',M_arr,...
