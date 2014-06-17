@@ -57,7 +57,7 @@ function showplot_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 % obtain BER file
-[fname, pname] = uigetfile({['BER*.mat;MSE*.mat']},'Choose BER/MSE file');
+[fname, pname] = uigetfile({['BER*.mat;MSE_db*.mat']},'Choose BER/MSE file');
 
 if fname
     if strcmp(fname(1:3),'BER')
@@ -99,7 +99,7 @@ if fname
     end
 else
     warning('A BER/MSE file should be selected');
-    [fname, pname] = uigetfile({'BER*.mat;MSE*.mat'},'Choose BER file');
+    [fname, pname] = uigetfile({'BER*.mat;MSE_db*.mat'},'Choose BER file');
     
     if ~fname
         error('Could not reach a BER/MSE file');
@@ -157,7 +157,7 @@ function uipushtool2_ClickedCallback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 % obtain BER file
-[fname, pname] = uigetfile({'BER*.mat;MSE*.mat'},'Choose BER file');
+[fname, pname] = uigetfile({'BER*.mat;MSE_db*.mat'},'Choose BER file');
 
 if fname
     if strcmp(fname(1:3),'BER')
