@@ -67,9 +67,10 @@ if strcmp(estimation_method,'IAM')
                 eq_coefs(i,3)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)-j*(EQ2-EQ1))/4; 
 
                 % %     re im re im ...
-                equalizer_output =conv(eq_coefs(i,:),rx_output(i,:));
+                equalizer_output(i,:) =conv(eq_coefs(i,:),rx_output(i,:));
+%                 equalizer_output(i,:) =conv(eq_coefs(i,:),scp_input(i,:));
                 sp_output(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
-                    = equalizer_output(2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1):2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1)+2*syms_per_frame-1);
+                    = equalizer_output(i,2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1):2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1)+2*syms_per_frame-1);
             end
         end
     elseif eq_select == 4 %no equalizer

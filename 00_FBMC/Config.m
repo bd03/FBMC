@@ -16,7 +16,7 @@
 %% 1- is_simulation setting: 
 % set it 1 if you want to run a simulation with selected parameters. 
 % set it 0 if you want to run only one try with selected parameters.
-is_simulation = true;
+is_simulation = false;
 
 %% 2- Set parameters for desired mode.
 if is_simulation
@@ -29,7 +29,7 @@ if is_simulation
     %---------------------------------
     % K will select the row, the last column is background noise power in dB 
     % (that might be come in handy in future) for reference
-    P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
+    P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .97195983 sqrt(2)/2 .23514695 -65];
         
     %---- Supported values for simulation mode----%
     %---------------------------------
@@ -156,8 +156,8 @@ else
     % 2.b Main mode parameters
     %---- General filterbank parameters ----%
     K = 4; % overlapping factor 
-    M = 1024; % number of subcarriers
-    num_frames = 10; % number of data frames in each FBMC block
+    M = 512; % number of subcarriers
+    num_frames = 200; % number of data frames in each FBMC block
     syms_per_frame = 10; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
     num_samples = M; %number of samples in a vector
@@ -173,7 +173,7 @@ else
     %---------------------------------
     % K will select the row, the last column is background noise power in dB 
     % (that might be come in handy in future) for reference
-    P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .971960 sqrt(2)/2 .235147 -65];
+    P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .97195983 sqrt(2)/2 .23514695 -65];
 
     %---- Channel settings ----%
     % noise settings
@@ -186,7 +186,7 @@ else
     max_doppler_shift = 1; %max. doppler shift
     channel_profiles = ['EPA', 'EVA', 'ETU']; % Valid channel profile selections
     profile ='EPA'; %Channel profile
-    use_matlab_channel = 1;
+    use_matlab_channel = 0;
     if use_matlab_channel
         [delay_a, pow_a] = LTE_channels2 (profile,bw);
 %         ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
@@ -206,9 +206,9 @@ else
 
     % preamble
     % IAM preambles 
-    preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+%     preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
     % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
-    % preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+    preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
 %     preamble = [zeros(M,1) repmat([3 3 3*j 3*j -3*j -3*j -3 -3].',M/8,1) zeros(M,1)];
     % POP preambles
     % preamble = [repmat([1 -1].',M/2,1) zeros(M,1)];
@@ -219,7 +219,7 @@ else
     end
 
     %---- Equalizer settings ----%
-    eq_select = 2; % selection of equalizer type 1: one tap, 
+    eq_select = 3; % selection of equalizer type 1: one tap, 
     % 2: three tap w/ geometric interp, 3: three tap w/ linear interp
     % 4: no equalizer
 
