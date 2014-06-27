@@ -599,7 +599,7 @@ else
     try
         load('BER_archive/BER_OFDM_PSK.mat');
         try
-            load('BER_archive/CONF_OFDM_PSK.mat');
+            load('BER_archive\CONF_OFDM_PSK.mat');
         catch
             error('CONF_OFDM_PSK data could not be found.')
         end
