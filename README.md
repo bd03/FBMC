@@ -1,5 +1,5 @@
 # FBMC
-## FBMC & OFDM/SC-FDMATransceiver Simulator
+## FBMC & OFDM/SC-FDMA Transceiver Simulator
 
 Single user FBMC & OFDM/SC-FDMA link level simulator.
 The project was developed for the simulation effort for my master thesis and hasn't been updated/improved since then.
