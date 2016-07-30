@@ -8,5 +8,8 @@
 # Autosaved files should also be ignored:
 *.asv
 
+# Generated .mat files should also be ignored:
+*.mat
+
 # all material in temp folder will be ignored
 00_FBMC/temp/
