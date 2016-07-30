@@ -37,15 +37,7 @@ for M=M_arr
     lp = K*M-1; % filter length
     delay = K*M+1-lp; %delay requirement
     num_samples = M; %number of samples in a vector
-    
-    % IAM preambles 
-%     preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
-    % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
-    preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-    % POP preambles
-    % preamble = [repmat([1 -1].',M/2,1) zeros(M,1)];
-    % IAM4 preambles
-    % preamble = [zeros(M,1) zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
+    preamble = [zeros(M,1) zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1) zeros(M,1)];
     if strcmp(estimation_method,'IAM4')
         preamble =[zeros(M,1) preamble];
     end 
@@ -58,15 +50,6 @@ for M=M_arr
     Prototype_filter;
 
     for modulation=q_arr
-%         if modulation == 16
-%             preamble = 3*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-%         elseif modulation == 64
-%             preamble = 7*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-%         elseif modulation ==256
-%             preamble = 15*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-%         else
-%             preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-%         end
         bits_per_sample = log2(modulation); %num of bits carried by one sample
         num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
         for SNR=s_arr

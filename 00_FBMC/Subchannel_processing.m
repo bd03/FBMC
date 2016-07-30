@@ -20,13 +20,13 @@ sp_output = zeros(M,num_symbols*2);
 if strcmp(estimation_method,'IAM')
     % remove preamble
     for i=1:num_frames
-        scp_preamble(:,i) = scp_input(:,2+(i-1)*(syms_per_frame+1)*2+(i-1));
-        scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = scp_input(:,4+(i-1)*(syms_per_frame+1)*2+(i-1):4+(i-1)*(syms_per_frame+1)*2+(i-1)+syms_per_frame*2-1);
+        scp_preamble(:,i) = scp_input(:,3+(i-1)*(syms_per_frame+2)*2+(i-1));
+        scp_data(:,1+(i-1)*(syms_per_frame)*2:i*(syms_per_frame)*2) = scp_input(:,6+(i-1)*(syms_per_frame+2)*2+(i-1):6+(i-1)*(syms_per_frame+2)*2+(i-1)+syms_per_frame*2-1);
     end
     
     % estimation of channel
     for i=1:num_frames
-        ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,2)*sumfactor);
+        ch_resp_est(:,i) = scp_preamble(:,i)./(preamble(:,3)*sumfactor);
     end
 
     if eq_select == 1
@@ -62,14 +62,14 @@ if strcmp(estimation_method,'IAM')
                     EQ2 = (EQi+EQ_plu)/2;            
                 end
 
-                eq_coefs(i,1)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)+j*(EQ2-EQ1))/4;
+                eq_coefs(i,3)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)+j*(EQ2-EQ1))/4;
                 eq_coefs(i,2)= (EQ1+EQ2)/2;
-                eq_coefs(i,3)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)-j*(EQ2-EQ1))/4; 
+                eq_coefs(i,1)= ((-1)^(i-1))*((EQ1-2*EQi+EQ2)-j*(EQ2-EQ1))/4; 
 
                 % %     re im re im ...
                 equalizer_output =conv(eq_coefs(i,:),rx_output(i,:));
                 sp_output(i,1+(ii-1)*2*syms_per_frame:2*syms_per_frame+(ii-1)*2*syms_per_frame)...
-                    = equalizer_output(2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1):2*K+2+1+(ii-1)*2*(syms_per_frame+1)+(ii-1)+2*syms_per_frame-1);
+                    = equalizer_output(2*K+4+1+(ii-1)*2*(syms_per_frame+2)+(ii-1):2*K+4+1+(ii-1)*2*(syms_per_frame+2)+(ii-1)+2*syms_per_frame-1);
             end
         end
     elseif eq_select == 4 %no equalizer

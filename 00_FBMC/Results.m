@@ -1,7 +1,7 @@
 %% Results
 %
 % Burak Dayi
-%simulation
+% simulation
 % This will present the results of simulation.
 %
 % Dependencies: m, m_est........
@@ -134,11 +134,11 @@ else
     ylabel('Number of errors')
     title('Number of bit errors w.r.t frames')
 
-    figu=figure(56);
-    plot(1:num_symbols,errors,'o')
-    xlabel('Symbols')
-    ylabel('Subcarrier')
-    title('Errors on each SC w.r.t symbols')
+    % figu=figure(56);
+    % plot(1:num_symbols,errors,'o')
+    % xlabel('Symbols')
+    % ylabel('Subcarrier')
+    % title('Errors on each SC w.r.t symbols')
     c1=clock;
     % savefig(figu,sprintf('%d%d%d%d%2d%d-figu',c1(3),c1(2),mod(c1(1),100),c1(4),c1(5),c1(6)*1000));
     % savefig(figfig,sprintf('%d%d%d%d%2d%d-figfig',c1(3),c1(2),mod(c1(1),100),c1(4),c1(5),c1(6)*1000));

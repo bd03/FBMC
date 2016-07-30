@@ -16,7 +16,7 @@
 %% 1- is_simulation setting: 
 % set it 1 if you want to run a simulation with selected parameters. 
 % set it 0 if you want to run only one try with selected parameters.
-is_simulation = true;
+is_simulation = false;
 
 %% 2- Set parameters for desired mode.
 if is_simulation
@@ -30,7 +30,7 @@ if is_simulation
     % K will select the row, the last column is background noise power in dB 
     % (that might be come in handy in future) for reference
     P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .97195983 sqrt(2)/2 .23514695 -65];
-        
+
     %---- Supported values for simulation mode----%
     %---------------------------------
     % This part should not be altered!
@@ -40,7 +40,7 @@ if is_simulation
     SNR_array = 0:1:30; % supported SNR value(s) in dB.
     M_array = 2.^(2:10);
     normalization = [2 10 42 170];
-
+    
     %---- Channel settings ----%
     % noise settings
     noisy = 1; %set 1 for SNR values to affect channel, set 0 for noiseless channel
@@ -77,14 +77,14 @@ if is_simulation
     % 4: no equalizer
     
     %---- Simulation settings ----%
-    num_frames = 25; % number of data frames in each FBMC block
+    num_frames = 4; % number of data frames in each FBMC block
     syms_per_frame = 20; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
-    num_trials = 20; % number of trials desired
+    num_trials = 1; % number of trials desired
     
     M_arr=2.^(10:10); % array of M's that will be used in the simulation
     q_arr=[4 16 64 256]; % array of QAM modes that will be used in sim.
-    s_arr=0:1:30; % array of SNR values that will be used in the simulation
+    s_arr=0:1:10; % array of SNR values that will be used in the simulation
         
     %---- Parameter check ----%
     if K>4 || K<2
@@ -157,16 +157,19 @@ else
     % 2.b Main mode parameters
     %---- General filterbank parameters ----%
     K = 4; % overlapping factor 
-    M = 512; % number of subcarriers
-    num_frames = 10; % number of data frames in each FBMC block
+    M = 256; % number of subcarriers
+    num_frames = 50; % number of data frames in each FBMC block
     syms_per_frame = 10; %number of symbols per FBMC frame
     num_symbols = num_frames*syms_per_frame; % total number of data symbols
     num_samples = M; %number of samples in a vector
-    modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
+    modulation = 4; %4-, 16-, 64-, 256-QAM
     bits_per_sample = log2(modulation); %num of bits carried by one sample
     num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
     lp = K*M-1; % filter length
-    delay = K*M+1-lp; %delay requirement
+    delay = K*M+1-lp; %delay requirement 
+    normalization = [2 10 42 170];
+    q_arr=[4 16 64 256]; % array of QAM modes that will be used in sim.
+
 
     %---- Prototype filter frequency coefficients----%
     %---------------------------------
@@ -175,7 +178,7 @@ else
     % K will select the row, the last column is background noise power in dB 
     % (that might be come in handy in future) for reference
     P=[ zeros(1,5);1 sqrt(2)/2 0 0 -35; 1 .911438 .411438 0 -44; 1 .97195983 sqrt(2)/2 .23514695 -65];
-
+    
     %---- Channel settings ----%
     % noise settings
     noisy = 0; %set 1 for SNR values to affect channel, set 0 for noiseless channel
@@ -186,8 +189,8 @@ else
     bw = 5e+6; % Transmission Bandwidth
     max_doppler_shift = 1; %max. doppler shift
     channel_profiles = ['EPA', 'EVA', 'ETU']; % Valid channel profile selections
-    profile ='EPA'; %Channel profile
-    use_matlab_channel = 1;
+    profile ='ETU'; %Channel profile
+    use_matlab_channel = 0;
     if use_matlab_channel
         [delay_a, pow_a] = LTE_channels2 (profile,bw);
 %         ch_resp = rayleighchan(1/bw,max_doppler_shift,delay_a,pow_a); %channel model
@@ -207,12 +210,8 @@ else
 
     % preamble
     % IAM preambles 
-    preamble = [zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
-    % preamble = [zeros(M,1) repmat([1 -1 -1 1].',M/4,1) zeros(M,1)];
-    % preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-%     preamble = [zeros(M,1) repmat([3 3 3*j 3*j -3*j -3*j -3 -3].',M/8,1) zeros(M,1)];
-    % POP preambles
-    % preamble = [repmat([1 -1].',M/2,1) zeros(M,1)];
+    preamble = [zeros(M,1) zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1) zeros(M,1)];
+
     % IAM4 preambles
     % preamble = [zeros(M,1) zeros(M,1) repmat([1 1 -1 -1].',M/4,1) zeros(M,1)];
     if strcmp(estimation_method,'IAM4')
@@ -281,14 +280,3 @@ if is_simulation
 else
     pause;
 end
-
-
-
-
-
-
-
-
-
-
-

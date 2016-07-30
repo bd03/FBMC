@@ -4,15 +4,15 @@
 %
 %
 
-[error1,rate2] = symerr(m,m_est);
-err=abs(m-m_est);
-dif_m = [m m_est];
+[error1,rate2] = symerr(m_data,m_est);
+err=abs(m_data-m_est);
+dif_m = [m_data m_est];
 [error4,rate] = symerr(bits,bits_est);
 
 if is_simulation
     M_x= find(M_array==M);
     mod_x = find(qam_sizes==modulation);
-    snr_x = find(SNR_array==SNR);
+    snr_x = find(EbN0_array==SNR);
     BER(M_x, mod_x, snr_x) = BER(M_x, mod_x, snr_x)+rate/num_trials;
     if tt==num_trials
         disp(sprintf('BER = %f', BER(M_x, mod_x, snr_x)));
@@ -31,6 +31,10 @@ if is_simulation
             end
         catch err
             warning('conf file');
+        end
+
+        if BER(M_x, mod_x, snr_x) == 0
+            break
         end
     end
 else

@@ -15,15 +15,17 @@ Config;
 %disp('+Configuration is obtained.');
 for M=M_arr
     for modulation=q_arr
-        num_samples = M; %number of samples in a vector
+        % allocated_subchannels = indices(2)-indices(1)+1; %number of samples in a vector
         bits_per_sample = log2(modulation); %num of bits carried by one sample
-        num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
-        cp_length = ceil(cp_ratio*M);
+        num_bits = num_symbols*allocated_subchannels*bits_per_sample; % total number of bits transmitted
+        % cp_length = ceil(cp_ratio*M);
         for SNR=s_arr
             if ~ideal
                 disp(sprintf('M=%d, %d-QAM, SNR=%d dB, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,SNR,num_trials,num_symbols,num_bits));
+%                 disp(sprintf('M=%d, %d-PSK, SNR=%d dB, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,SNR,num_trials,num_symbols,num_bits));
             else
                 disp(sprintf('M=%d, %d-QAM, SNR=Ideal, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,num_trials,num_symbols,num_bits));
+%                 disp(sprintf('M=%d, %d-PSK, SNR=Ideal, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,num_trials,num_symbols,num_bits));
             end
             for tt=1:num_trials
                 Symbol_Creation;

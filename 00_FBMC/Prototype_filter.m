@@ -1,4 +1,4 @@
-% Prototype_filter
+%% Prototype_filter
 %
 % Burak Dayi
 %
