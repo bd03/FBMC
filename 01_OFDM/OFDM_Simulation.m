@@ -21,9 +21,9 @@ for M=M_arr
         cp_length = ceil(cp_ratio*M);
         for SNR=s_arr
             if ~ideal
-                disp(sprintf('M=%d, %d-PSK, SNR=%d dB, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,SNR,num_trials,num_symbols,num_bits));
+                disp(sprintf('M=%d, %d-QAM, SNR=%d dB, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,SNR,num_trials,num_symbols,num_bits));
             else
-                disp(sprintf('M=%d, %d-PSK, SNR=Ideal, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,num_trials,num_symbols,num_bits));
+                disp(sprintf('M=%d, %d-QAM, SNR=Ideal, num_trials=%d, num_symbols=%d, num_bits=%d', M,modulation,num_trials,num_symbols,num_bits));
             end
             for tt=1:num_trials
                 Symbol_Creation;

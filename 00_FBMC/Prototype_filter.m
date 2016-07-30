@@ -48,4 +48,4 @@ semilogy(abs(fft(h)));
 title(sprintf('Freq magnitude response of PHYDYAS Filter with K=%d M=%d lp=%d', K,M,lp));
 % ylabel('Log Magnitude');
 grid on;
-close all;
+% close all;

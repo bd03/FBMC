@@ -58,15 +58,15 @@ for M=M_arr
     Prototype_filter;
 
     for modulation=q_arr
-        if modulation == 16
-            preamble = 3*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-        elseif modulation == 64
-            preamble = 5*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-        elseif modulation ==256
-            preamble = 7*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-        else
-            preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
-        end
+%         if modulation == 16
+%             preamble = 3*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+%         elseif modulation == 64
+%             preamble = 7*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+%         elseif modulation ==256
+%             preamble = 15*[zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+%         else
+%             preamble = [zeros(M,1) repmat([1 -j -1 j].',M/4,1) zeros(M,1)];
+%         end
         bits_per_sample = log2(modulation); %num of bits carried by one sample
         num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
         for SNR=s_arr

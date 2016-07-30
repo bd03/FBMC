@@ -21,3 +21,4 @@ m = reshape(bi2de(reshape(bits,bits_per_sample,M*num_symbols).','left-msb'),M,nu
 %m = (randi(modulation,num_symbols,num_samples)-1).'; %random samples generated
 
 qam_m = qammod(m, modulation, pi/2,'gray'); %built-in MATLAB qam modulation 
+qam_m = qam_m/sqrt(normalization(find(q_arr==modulation)));

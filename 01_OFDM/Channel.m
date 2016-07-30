@@ -10,4 +10,4 @@ y = tx_output;
 resp = [1]; % no impairments at the moment
 
 %y_ch = y; ideal=1;
-y_ch = awgn(y,SNR,'measured'); ideal=0; %SNR in dB ~ 10log(Ps/Pn)
+y_ch = awgn(y,SNR+10*log10(1-cp_ratio),'measured'); ideal=0; %SNR in dB ~ 10log(Ps/Pn)

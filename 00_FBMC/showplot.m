@@ -22,7 +22,7 @@ function varargout = showplot(varargin)
 
 % Edit the above text to modify the response to help showplot
 
-% Last Modified by GUIDE v2.5 13-May-2014 14:56:19
+% Last Modified by GUIDE v2.5 04-Sep-2014 18:22:50
 
 % Created: 19-03-2014
 
@@ -459,6 +459,20 @@ figu=handles.figure1;
 % c1=clock;
 name=get(handles.figure1,'Name');
 savefig(figu,name(1:end-4));
+hgsave(figu, 'myFigure.fig');
+saveas(figu,name(1:end-4),'eps') 
+saveas(figu,name(1:end-4),'pdf') 
+
+
+
+
+% F=getframe(handles.figure1); %select axes in GUI
+% figure(); %new figure
+% image(F.cdata); %show selected axes in new figure
+% saveas(gcf, 'path', 'fig'); %save figure
+% close(gcf); %and close it
+
+
 
 
 function update_plot(handles)

@@ -13,13 +13,13 @@
 c1 = clock;
 
 %% General parameters
-M = 128; % number of subcarriers
-num_symbols = 5000; % number of symbols
-modulation = 4; %4-, 16-, 64-, 128-, 256-QAM
+M = 1024; % number of subcarriers
+num_symbols = 500; % number of symbols
+modulation = 256; %4-, 16-, 64-, 128-, 256-QAM
 num_samples = M; %number of samples in a vector
 bits_per_sample = log2(modulation); %num of bits carried by one sample
 num_bits = num_symbols*num_samples*bits_per_sample; % total number of bits transmitted
-qam_sizes = [2 4];
+qam_sizes = [4 16 64 256];
 
 cp_ratio = 0.25;
 cp_length = ceil(cp_ratio*M);
@@ -37,12 +37,12 @@ end
 
 %% Channel & simulation parameters
 is_simulation = true;
-SNR_array = 0:1:15; % Array of SNR value(s) in dB.
+SNR_array = 0:1:30; % Array of SNR value(s) in dB.
 save('SNR_array.mat','SNR_array');
-M_array = 2.^(2:9);
+M_array = 2.^(10);
 save('M_array.mat','M_array');
 BER=zeros(length(M_array),length(qam_sizes),length(SNR_array));
-num_trials = 200; % number of trials desired
+num_trials = 100; % number of trials desired
 
 if num_trials<1 || rem(num_trials,1)~=0
     num_trials

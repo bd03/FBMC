@@ -16,7 +16,7 @@ m_est = zeros(M,num_symbols);
 
 % Estimation of the symbols
 for k=1:M
-    qam_est(k,:)= (1/sumfactor)*(oqam_demod(k,1:2:2*num_symbols-1)+oqam_demod(k,2:2:2*num_symbols));
+    qam_est(k,:)= sqrt(normalization(find(q_arr==modulation)))*(1/sumfactor)*(oqam_demod(k,1:2:2*num_symbols-1)+oqam_demod(k,2:2:2*num_symbols));
     m_est(k,:) = qamdemod(qam_est(k,:),modulation,pi/2,'gray');
 end
 
